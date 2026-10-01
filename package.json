@@ -1,0 +1,52 @@
+{
+  "name": "opencode-pstack",
+  "version": "0.1.0",
+  "description": "pstack's rigorous agent workflows (poteto-mode, playbooks, principles) as an OpenCode V2 plugin",
+  "type": "module",
+  "license": "MIT",
+  "author": "Shoubhit Dash <https://github.com/nexxeln>",
+  "homepage": "https://github.com/nexxeln/oc-pstack#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nexxeln/oc-pstack.git"
+  },
+  "bugs": "https://github.com/nexxeln/oc-pstack/issues",
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "pstack",
+    "poteto-mode",
+    "agents",
+    "skills"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/index.ts",
+    "./tui": "./src/tui.tsx"
+  },
+  "files": [
+    "src",
+    "skills",
+    "agents",
+    "server.ts",
+    "tui.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "port": "bun scripts/port.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test test/"
+  },
+  "dependencies": {
+    "@opencode/plugin": "2.0.16"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.9.3",
+    "@opencode/theme": "2.0.16",
+    "@opentui/core": "0.5.12",
+    "@opentui/solid": "0.5.12",
+    "solid-js": "1.9.15"
+  }
+}

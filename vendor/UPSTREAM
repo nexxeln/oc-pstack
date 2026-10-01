@@ -1,0 +1,5 @@
+repo: https://github.com/cursor/plugins
+path: pstack
+commit: ecc249f1e306fc64ddf83c7bed16cacf7c2239db
+version: 0.15.5
+contents: agents/, skills/, LICENSE, README.md. Omitted because nothing here uses them: assets/, docs/, automations/, .cursor-plugin/.
