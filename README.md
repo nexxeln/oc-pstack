@@ -46,7 +46,7 @@ Every other pstack skill is a slash command too: `/how`, `/why`, `/interrogate`,
 - `vendor/pstack` is upstream's `skills/` and `agents/`, unedited. `vendor/UPSTREAM` records the commit.
 - `skills/` and `agents/` are generated. Don't edit them by hand. `overlay/patches.ts` holds exact passage rewrites, and `overlay/skills/` holds files that replace upstream's outright. `scripts/port.ts` applies the patches, then table-driven renames, then the overlay. It fails when a patch no longer matches upstream or when a Cursor mechanism survives, so an upstream bump shows exactly what to re-port.
 - `src/` is the plugin: `index.ts` (server) and `tui.tsx` (sidebar). `server.ts` and `tui.ts` are the entry points OpenCode resolves for a local directory.
-- This repo's `opencode.json` loads the plugin from `./`, so opening OpenCode here runs your working copy with hot reload.
+- To work on the plugin, add your clone's absolute path to `plugins` in your global config. OpenCode hot-reloads it when the code changes, but not when only `skills/` or `agents/` change, so restart OpenCode after `bun run port`. Don't also load it from a project config: a second entry with the same plugin ID fails to load.
 
 ```sh
 bun install
