@@ -261,5 +261,7 @@ export const patches: Record<string, Array<[string, string]>> = {
     ["Write `.cursor/skills/verify-<app>/SKILL.md`", "Write `.opencode/skills/verify-<app>/SKILL.md`"],
     ["Create `.cursor/skills/verify-<app>/features/README.md`", "Create `.opencode/skills/verify-<app>/features/README.md`"],
   ],
+  // Upstream cursor/plugins#379 by poteto, not yet merged: unslop is meant to apply without being asked.
+  "skills/unslop/SKILL.md": [["description: Cut AI tells from any writing. Must always apply.\ndisable-model-invocation: true\n", "description: Cut AI tells from any writing. Must always apply.\n"]],
   "skills/maintain-verification-skill/SKILL.md": [["(usually `.cursor/skills/verify-*/`)", "(usually `.opencode/skills/verify-*/`)"]],
 }
