@@ -25,7 +25,7 @@ Remaining triggers:
 - Nontrivial multi-step → write the throughput checkpoint (Feature step 3).
 - Any prose surface → the **unslop** skill (`pstack-unslop`). Your reply is a prose surface. Write it per **Writing the reply**. Agent-facing prose also follows the `skill-creator` skill when installed, otherwise OpenCode's skill format (a `SKILL.md` with `name` and `description` frontmatter).
 - Docs, RFCs, readmes, PR descriptions, or commit messages → the **technical-writing** skill (`pstack-technical-writing`) (`/technical-writing`).
-- Before commit → a deslop pass (reread the diff and delete dead code, needless layers, defensive noise, and narrating comments per **principle-laziness-protocol**).
+- Before commit → `/deslop`, the **deslop** skill (`pstack-deslop`).
 - Before review → the **no-comments** skill (`pstack-no-comments`) (`/no-comments`).
 - Shipping UI / IDE / CLI → drive the real surface. Browser, Electron, and web UIs use OpenCode's `browser` tools. CLIs and TUIs use a real terminal driven through the shell. A repo's own `verify-*` skill wins over both. For bug fixes, reproduce first on the same surface yourself. Hand to the user only under the narrow Bug fix step 1 exception.
 - Any PR-status request → the **Babysit** playbook (`playbooks/babysit.md`). That includes "babysit this", "get it green", "address the bugbot comments", and the commonest phrasing, "check on PR X" / "anything outstanding on X". Never triggered by merely opening a PR. Declare its mode before polling. The playbook's step 1 owns the request-to-mode mapping. Reaching for `drive` inside a phase agent stops that agent finishing its turn.

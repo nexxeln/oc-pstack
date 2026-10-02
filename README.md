@@ -37,13 +37,14 @@ Every other pstack skill is a slash command too: `/how`, `/why`, `/interrogate`,
 | `/goal` | `pstack_goal`, restated to the agent every turn until cleared |
 | cloud agents, `cloud_base_branch` | background subagents, one worktree each (`rift.create` or `git worktree add`) |
 | `agent-transcripts/*.jsonl` | `tools.pstack.sessions / search / transcript` in code mode, scoped to the current project |
-| `control-ui`, `control-cli`, `deslop` (cursor-team-kit) | OpenCode's `browser` tools, a shell-driven terminal, and an inline deslop pass |
+| `deslop` (cursor-team-kit) | bundled as `/deslop`, as proposed in cursor/plugins#371 |
+| `control-ui`, `control-cli` (cursor-team-kit) | OpenCode's `browser` tools and a shell-driven terminal |
 | `create-skill` | `skill-creator` when installed, else OpenCode's SKILL.md format |
 | `make-bot-ui` | dropped. It only drives Cursor's Grok Bot webhooks |
 
 ## Development
 
-- `vendor/pstack` is upstream's `skills/` and `agents/`, unedited. `vendor/UPSTREAM` records the commit.
+- `vendor/pstack` is upstream's `skills/` and `agents/`, unedited. `vendor/cursor-team-kit` holds `deslop`, which pstack calls but doesn't ship. `vendor/UPSTREAM` records the commits.
 - `skills/` and `agents/` are generated. Don't edit them by hand. `overlay/patches.ts` holds exact passage rewrites, and `overlay/skills/` holds files that replace upstream's outright. `scripts/port.ts` applies the patches, then table-driven renames, then the overlay. It fails when a patch no longer matches upstream or when a Cursor mechanism survives, so an upstream bump shows exactly what to re-port.
 - `src/` is the plugin: `index.ts` (server) and `tui.tsx` (sidebar). `server.ts` and `tui.ts` are the entry points OpenCode resolves for a local directory.
 - To work on the plugin, add your clone's absolute path to `plugins` in your global config. OpenCode hot-reloads it when the code changes, but not when only `skills/` or `agents/` change, so restart OpenCode after `bun run port`. Don't also load it from a project config: a second entry with the same plugin ID fails to load.
@@ -76,4 +77,4 @@ Early. Tested against OpenCode 2.0.16: skills, agents, and commands register; `/
 
 ## License
 
-MIT. pstack's skills, playbooks, and agents are © Lauren Tan. See [LICENSE](LICENSE).
+MIT. pstack's skills, playbooks, and agents are © Lauren Tan; `deslop` is © Cursor. See [LICENSE](LICENSE).

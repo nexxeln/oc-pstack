@@ -1,14 +1,18 @@
-// Regenerates skills/ and agents/ from vendor/pstack: exact patches, then generic rewrites, then overlay files.
+// Regenerates skills/ and agents/ from vendor/: exact patches, then generic rewrites, then overlay files.
 // Fails when a patch no longer matches upstream or a Cursor mechanism survives the port.
 import { cp, mkdir, readdir, rm } from "node:fs/promises"
 import path from "node:path"
 import { drop, patches } from "../overlay/patches.ts"
 
 const root = path.join(import.meta.dir, "..")
-const vendor = path.join(root, "vendor/pstack")
+// pstack itself, plus the cursor-team-kit skills pstack calls but does not ship.
+const sources = ["vendor/pstack", "vendor/cursor-team-kit"].map((dir) => path.join(root, dir))
 const overlay = path.join(root, "overlay")
 
-const skillNames = (await readdir(path.join(vendor, "skills"), { withFileTypes: true }))
+const skillNames = (
+  await Promise.all(sources.map((source) => readdir(path.join(source, "skills"), { withFileTypes: true })))
+)
+  .flat()
   .filter((entry) => entry.isDirectory() && !drop.includes(`skills/${entry.name}`))
   .map((entry) => entry.name)
 
@@ -68,18 +72,24 @@ const port = (file: string, text: string) => {
 await rm(path.join(root, "skills"), { recursive: true, force: true })
 await rm(path.join(root, "agents"), { recursive: true, force: true })
 
-const files = (await Array.fromAsync(new Bun.Glob("{skills,agents}/**/*").scan({ cwd: vendor, dot: true }))).filter(
-  (file) => !file.includes("node_modules/") && !drop.some((prefix) => file.startsWith(`${prefix}/`)),
+const files = (
+  await Promise.all(
+    sources.map(async (source) =>
+      (await Array.fromAsync(new Bun.Glob("{skills,agents}/**/*").scan({ cwd: source, dot: true }))).map((file) => ({ source, file })),
+    ),
+  )
 )
-const unused = Object.keys(patches).filter((file) => !files.includes(file))
+  .flat()
+  .filter(({ file }) => !file.includes("node_modules/") && !drop.some((prefix) => file.startsWith(`${prefix}/`)))
+const unused = Object.keys(patches).filter((file) => !files.some((entry) => entry.file === file))
 if (unused.length) throw new Error(`patches target missing files: ${unused.join(", ")}`)
 
 await Promise.all(
-  files.map(async (file) => {
+  files.map(async ({ source, file }) => {
     const target = path.join(root, file)
     await mkdir(path.dirname(target), { recursive: true })
-    if (!/\.(md|sh)$/.test(file)) return cp(path.join(vendor, file), target)
-    return Bun.write(target, port(file, await Bun.file(path.join(vendor, file)).text()))
+    if (!/\.(md|sh)$/.test(file)) return cp(path.join(source, file), target)
+    return Bun.write(target, port(file, await Bun.file(path.join(source, file)).text()))
   }),
 )
 await cp(path.join(overlay, "skills"), path.join(root, "skills"), { recursive: true })
@@ -99,4 +109,4 @@ if (residue.length) {
   console.error(residue.join("\n"))
   throw new Error(`${residue.length} lines still name Cursor mechanisms`)
 }
-console.log(`ported ${skillNames.length} skills and ${files.filter((file) => file.startsWith("agents/")).length} agents`)
+console.log(`ported ${skillNames.length} skills and ${files.filter(({ file }) => file.startsWith("agents/")).length} agents`)

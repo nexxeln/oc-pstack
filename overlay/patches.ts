@@ -9,8 +9,7 @@ const ROLE_NATIVE =
 const WORKTREE = "its own worktree (`rift.create` when available, otherwise `git worktree add`)"
 const CONTROL_UI = "OpenCode's `browser` tools"
 const CONTROL_CLI = "a real terminal driven through the shell"
-const DESLOP =
-  "a deslop pass (reread the diff and delete dead code, needless layers, defensive noise, and narrating comments per **principle-laziness-protocol**)"
+const DESLOP = "`/deslop`"
 const SKILL_FORMAT = "the `skill-creator` skill when installed, otherwise OpenCode's skill format (a `SKILL.md` with `name` and `description` frontmatter)"
 
 export const drop = ["skills/make-bot-ui"]
@@ -102,7 +101,7 @@ export const patches: Record<string, Array<[string, string]>> = {
   ],
   "skills/poteto-mode/SKILL.md": [
     ["Agent-facing prose also follows the **create-skill** skill (Cursor's built-in for authoring SKILL.md files).", `Agent-facing prose also follows ${SKILL_FORMAT}.`],
-    ["- Before commit → the `deslop` skill from the `cursor-team-kit` plugin (`/deslop`).", `- Before commit → ${DESLOP}.`],
+    ["- Before commit → the `deslop` skill from the `cursor-team-kit` plugin (`/deslop`).", "- Before commit → `/deslop`, the **deslop** skill."],
     [
       "- Shipping UI / IDE / CLI → the matching control skill. `cursor-team-kit` publishes `control-cli` (CLIs and TUIs) and `control-ui` (browser / Electron / web UIs).",
       `- Shipping UI / IDE / CLI → drive the real surface. Browser, Electron, and web UIs use ${CONTROL_UI}. CLIs and TUIs use ${CONTROL_CLI}. A repo's own \`verify-*\` skill wins over both.`,
@@ -130,7 +129,7 @@ export const patches: Record<string, Array<[string, string]>> = {
   "skills/poteto-mode/playbooks/authoring-a-skill.md": [["1. Use the **create-skill** skill (Cursor's built-in for authoring SKILL.md files).", `1. Use ${SKILL_FORMAT}.`]],
   "skills/poteto-mode/playbooks/visual-parity.md": [["`/loop` per component until the diff is zero.", "Loop per component with `pstack_loop` until the diff is zero."]],
   "skills/poteto-mode/playbooks/opening-a-pr.md": [
-    ["Run `/deslop` from `cursor-team-kit` over the diff before commit.", `Run ${DESLOP} before commit.`],
+    ["Run `/deslop` from `cursor-team-kit` over the diff before commit.", "Run `/deslop` over the diff before commit."],
     ["Cloud-agent PR tools default to draft, so set `draft: false` on every PR creation call.", "Set `draft: false` on every PR creation call that takes one."],
   ],
   "skills/poteto-mode/playbooks/babysit.md": [
