@@ -67,7 +67,7 @@ To update upstream, copy `skills/` and `agents/` from a newer `cursor/plugins` c
 5. **No per-agent prompt addendum.** `agent.system` replaces the whole base prompt, so the mode reminder, the agent bodies, and the goal ride the `context` hook. They miss compaction requests and never enter durable instructions. Instruction entries (`session.instructions.entry.*`) would fix it once the plugin `SessionDomain` exposes them.
 6. **Global `permission` overrides plugin agent rules.** Config appends it after every agent's rules, so `"*": "allow"` also unlocks built-in `explore` and `plan`. pstack enforces Comment Sicko through the `evaluate` hook.
 7. **The `subagent` tool says "NEVER set `model`".** pstack's role routing needs it. The skills say the roles count as the user's explicit request.
-8. **Subagent depth defaults to 1.** `swarm`, `arena`, and `interrogate` can't run inside a `poteto-agent` delegate unless `experimental.subagent_depth` is raised.
+8. **Subagent depth defaults to 1.** Running `/swarm`, `/arena`, or `/interrogate` from the `poteto` agent works. Running them inside a `poteto-agent` delegate, as the autopilot and orchestrate playbooks do, needs `"experimental": { "subagent_depth": 2 }` in your config. Plugins can't change config, so the skills tell agents to run the fan-out from the parent when they hit the limit.
 9. **No `agent.add`.** `update` on a new id creates the agent. It works but is undocumented.
 10. **Returning `output` without an `output` schema type-checks but fails at call time.**
 

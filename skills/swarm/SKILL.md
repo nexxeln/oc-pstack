@@ -33,7 +33,7 @@ When a worker must start from a non-default pushed branch, create its worktree a
 
 Every brief stands alone. Include the goal, scope, exact slice or race arm, how to verify, and what to report. Reports use `PASS`, `ISSUES`, or `BLOCKED` with evidence. A worker that can prove a defect reports `ISSUES` and lists every issue it can prove, not only the first.
 
-If a worker drops out, proceed with N-1 and note it.
+If a worker drops out, proceed with N-1 and note it. OpenCode limits nesting with `experimental.subagent_depth` (default 1), so a delegate may be unable to spawn its own subagents. On a depth error, run that fan-out from the parent session and say so.
 
 ## Phase C: Aggregate
 

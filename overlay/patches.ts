@@ -12,6 +12,9 @@ const CONTROL_CLI = "a real terminal driven through the shell"
 const DESLOP = "`/deslop`"
 const SKILL_FORMAT = "the `skill-creator` skill when installed, otherwise OpenCode's skill format (a `SKILL.md` with `name` and `description` frontmatter)"
 
+const DEPTH =
+  "OpenCode limits nesting with `experimental.subagent_depth` (default 1), so a delegate may be unable to spawn its own subagents. On a depth error, run that fan-out from the parent session and say so."
+
 export const drop = ["skills/make-bot-ui"]
 
 export const patches: Record<string, Array<[string, string]>> = {
@@ -98,6 +101,7 @@ export const patches: Record<string, Array<[string, string]>> = {
       `Spawn all N workers in one message with the \`subagent\` tool, \`agent: "general"\`, \`background: true\`, and the step 4 model, left unset for \`inherit-parent\`. A worker that writes gets ${WORKTREE}, named in its brief.`,
     ],
     ["When a worker must start from a non-default pushed branch, pass `cloud_base_branch`.", "When a worker must start from a non-default pushed branch, create its worktree at that branch."],
+    ["If a worker drops out, proceed with N-1 and note it.", `If a worker drops out, proceed with N-1 and note it. ${DEPTH}`],
   ],
   "skills/poteto-mode/SKILL.md": [
     ["Agent-facing prose also follows the **create-skill** skill (Cursor's built-in for authoring SKILL.md files).", `Agent-facing prose also follows ${SKILL_FORMAT}.`],
@@ -119,6 +123,7 @@ export const patches: Record<string, Array<[string, string]>> = {
       "Roles set by `/setup-pstack` override these defaults and the model choices in the routed skills (`how`, `why`, `arena`, `swarm`, `architect`, `interrogate`, `reflect`). An unset role keeps its default, and a role of `inherit-parent` runs on the parent session's model (omit `model`). Each code playbook's configured model comes from its role",
     ],
     ["from a transcript, cloud-agent URL, or pushed branch.", "from a session, a share link, or a pushed branch."],
+    ["You own every subagent's work.", `${DEPTH} You own every subagent's work.`],
     ["going offline, a Cursor restart, or imminent context compaction.", "going offline, an OpenCode restart, or imminent context compaction."],
     ["Open a todolist whose first items are the matched playbook's steps", "Open a `pstack_todo` list whose first items are the matched playbook's steps"],
   ],
