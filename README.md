@@ -22,7 +22,9 @@ Then the same two steps as upstream:
 1. `/setup-pstack` picks a reasoning budget and a model per role. Defaults work without it.
 2. `/poteto-mode <task>` whenever the work needs rigor. It is sticky: you stay in the `poteto` agent (Tab shows it) until you switch agents or say so.
 
-Every other pstack skill is a slash command too: `/how`, `/why`, `/interrogate`, `/arena`, `/swarm`, `/reflect`, `/recall`, `/no-comments`, `/unslop`, `/tdd`, … Principles attach as `@pstack-principle-<name>`.
+Updates preserve saved model choices. A previous setup can still pin Sol and three-model panels after the defaults change. To adopt the current Opus/Grok defaults, explicitly change those roles during `/setup-pstack`.
+
+Every other pstack skill is a slash command too: `/poteto-help`, `/correct`, `/benchmark-checklist`, `/how`, `/why`, `/interrogate`, `/arena`, `/swarm`, `/reflect`, `/recall`, `/no-comments`, `/unslop`, `/tdd`, … Principles attach as `@pstack-principle-<name>`.
 
 ## How each pstack mechanism maps to OpenCode
 
@@ -31,7 +33,7 @@ Every other pstack skill is a slash command too: `/how`, `/why`, `/interrogate`,
 | `/poteto-mode`, a sticky mode skill with a per-turn `reminder` | the `poteto` primary agent; the `context` hook adds the reminder for that agent only |
 | `poteto-agent`, `Comment Sicko` subagents | `poteto-agent`, `comment-sicko`. Edits by Comment Sicko are denied through the permission `evaluate` hook |
 | `Task` with `subagent_type`, `run_in_background`, `readonly` | the `subagent` tool with `agent`, `background`; read-only roles use `explore` |
-| `~/.cursor/rules/pstack-models.mdc` | `pstack_roles`, stored in plugin storage. Unset roles resolve to the newest claude opus, gpt sol, and grok on your provider, with the budget's variant |
+| `~/.cursor/rules/pstack-models.mdc` | `pstack_roles`, stored in plugin storage. Unset roles resolve to the newest claude opus and grok, preferring your provider. The default budget is `large`, with `xhigh` reasoning. Stored choices override these defaults |
 | the todo list | `pstack_todo`, shown in the session sidebar (TUI entry) |
 | `/loop` | `/loop [30m] <prompt>` for you, `pstack_loop` for the agent. Dynamic mode re-prompts when the session goes idle; it stops on failure or a user interrupt |
 | `/goal` | `pstack_goal`, restated to the agent every turn until cleared |
@@ -74,6 +76,8 @@ To update upstream, copy `skills/` and `agents/` from a newer `cursor/plugins` c
 ## Status
 
 Early. Tested against OpenCode 2.0.16: skills, agents, and commands register; `/loop`, `pstack_goal`, `pstack_roles`, the todo RPC, and Comment Sicko's edit deny work end to end. The session tools read OpenCode's database directly (gap 1), so a schema change in OpenCode can break them until the plugin API exposes sessions. Not yet exercised: the sidebar in a real TUI, `/setup-pstack` end to end, and a full playbook run.
+
+Upstream snapshot is pstack 0.15.15 at `df581122`. See `vendor/UPSTREAM` for the full revision.
 
 ## License
 

@@ -33,13 +33,13 @@ Write one clear paragraph. If you're unsure about the intent, ask the user befor
 
 ## Step 3, Spawn Reviewers
 
-Launch all reviewers in a single message using the `subagent` tool. Use the `interrogate reviewers` role from `pstack_roles`, one reviewer per entry, labelled Reviewer A, B, C, and onward to the entry count. The default panel is one model each from the claude, gpt, and grok families.
+Launch all reviewers in a single message using the `subagent` tool. Use the `interrogate reviewers` role from `pstack_roles`, one reviewer per entry, labelled Reviewer A, B, C, and onward to the entry count. The default panel is one model each from the claude and grok families.
 
 For each reviewer:
 - `model`: its `interrogate reviewers` entry. The user chose these models for pstack, so passing them is an explicit model request. For an `inherit-parent` entry, omit `model` so that reviewer runs on the parent model.
 - `agent`: `explore` keeps the reviewer read-only. Use `general` when the review needs MCP lookups.
 
-If the `subagent` tool rejects an entry, look up the closest model of the same family with `opencode.models` (prefer the highest-reasoning variant), spawn with it, and say so. Families go by model id: `claude-*`, `gpt-*`, and `grok-*`. Do not block the review on a model issue. Never treat `inherit-parent` as a rejected model.
+If the `subagent` tool rejects an entry, look up the closest model of the same family and reasoning tier with `opencode.models`, spawn with it, and say so. Do not block the review on a model issue. Never treat `inherit-parent` as a rejected model.
 
 Read `references/reviewer-prompt.md` and fill in the template with:
 1. The stated intent

@@ -38,15 +38,15 @@ export const patches: Record<string, Array<[string, string]>> = {
     [ROLE_RULE.replace("Each spawn below names", "Each reviewer and the synthesizer name"), ROLE_NATIVE.replace("Each spawn below names a role", "Each reviewer and the synthesizer name a role")],
     [", with `model` set as below, agent mode (`readonly: false`).", ", with `model` set as below."],
     [
-      "One `Task` call, `subagent_type: generalPurpose`, with `model` from the `reflect judgment, divergent, synthesizer` line (default `claude-opus-5-5-max`), agent mode (`readonly: false`).",
+      "One `Task` call, `subagent_type: generalPurpose`, with `model` from the `reflect judgment, divergent, synthesizer` line (default `claude-opus-5-5-xhigh`), agent mode (`readonly: false`).",
       'One `subagent` call, `agent: "general"`, with `model` from the `reflect judgment, divergent, synthesizer` role.',
     ],
     [" Reviewers need MCP access for context lookups (tickets, chat threads, observability traces referenced in the transcript). Readonly strips MCPs.", " Reviewers need MCP access for context lookups (tickets, chat threads, observability traces referenced in the transcript), which `general` has."],
     [" The synthesizer's quality check includes spot-verifying citations, which can require MCP access. Readonly strips MCPs.", " The synthesizer's quality check includes spot-verifying citations, which can require MCP access."],
     ["| Lens | Role line | Default `model` | Prompt template |\n|---|---|---|---|", "| Lens | Role | Prompt template |\n|---|---|---|"],
-    ["| `reflect judgment, divergent, synthesizer` | `claude-opus-5-5-max` | `references/judgment-reviewer.md` |", "| `reflect judgment, divergent, synthesizer` | `references/judgment-reviewer.md` |"],
-    ["| `reflect tooling` | `gpt-5.6-sol-max` | `references/tooling-reviewer.md` |", "| `reflect tooling` | `references/tooling-reviewer.md` |"],
-    ["| `reflect judgment, divergent, synthesizer` | `claude-opus-5-5-max` | `references/divergent-reviewer.md` |", "| `reflect judgment, divergent, synthesizer` | `references/divergent-reviewer.md` |"],
+    ["| `reflect judgment, divergent, synthesizer` | `claude-opus-5-5-xhigh` | `references/judgment-reviewer.md` |", "| `reflect judgment, divergent, synthesizer` | `references/judgment-reviewer.md` |"],
+    ["| `reflect tooling` | `grok-4.7-xhigh-fast` | `references/tooling-reviewer.md` |", "| `reflect tooling` | `references/tooling-reviewer.md` |"],
+    ["| `reflect judgment, divergent, synthesizer` | `claude-opus-5-5-xhigh` | `references/divergent-reviewer.md` |", "| `reflect judgment, divergent, synthesizer` | `references/divergent-reviewer.md` |"],
     [
       "The parent finds its own transcript file before fanning out. The system prompt names the active workspace's `agent-transcripts/` directory. Use that path. Do not glob across `~/.cursor/projects/*/`. That crosses workspace boundaries and reads private chats from unrelated projects.",
       'The parent renders its own session before fanning out. Call `pstack.transcript({ file: true })` with no `sessionID`. It writes this session as markdown with `[#seq]` anchors and returns the path. The `pstack.*` session tools only see the current project. Never ask for another project\'s sessions.',
@@ -59,33 +59,33 @@ export const patches: Record<string, Array<[string, string]>> = {
   ],
   "skills/interrogate/SKILL.md": [
     [
-      "Use the `interrogate reviewers` line in `~/.cursor/rules/pstack-models.mdc`, one reviewer per entry, extending or shrinking the Reviewer A/B/C labels below to the configured entry count. If the rule or that line is missing, use the table defaults.\n\n| Subagent | Default model |\n|----------|---------------|\n| Reviewer A | `claude-opus-5-5-max` |\n| Reviewer B | `gpt-5.6-sol-max` |\n| Reviewer C | `grok-4.7-xhigh-fast` |",
-      "Use the `interrogate reviewers` role from `pstack_roles`, one reviewer per entry, labelled Reviewer A, B, C, and onward to the entry count. The default panel is one model each from the claude, gpt, and grok families.",
+      "Use the `interrogate reviewers` line in `~/.cursor/rules/pstack-models.mdc`, one reviewer per entry, extending or shrinking the Reviewer A/B labels below to the configured entry count. If the rule or that line is missing, use the table defaults.\n\n| Subagent | Default model |\n|----------|---------------|\n| Reviewer A | `claude-opus-5-5-xhigh` |\n| Reviewer B | `grok-4.7-xhigh-fast` |",
+      "Use the `interrogate reviewers` role from `pstack_roles`, one reviewer per entry, labelled Reviewer A, B, C, and onward to the entry count. The default panel is one model each from the claude and grok families.",
     ],
     [
       "- `model`: the configured `interrogate reviewers` entry, or the table default with no configured line. For an `auto` or `inherit-parent` entry, omit `model` so that reviewer runs on the parent model.\n- `readonly`: `true`",
       "- `model`: its `interrogate reviewers` entry. The user chose these models for pstack, so passing them is an explicit model request. For an `inherit-parent` entry, omit `model` so that reviewer runs on the parent model.\n- `agent`: `explore` keeps the reviewer read-only. Use `general` when the review needs MCP lookups.",
     ],
     [
-      "If the Task tool rejects a configured entry, run that reviewer on the table default of its family and say so. Families go by prefix: `claude-*`, `gpt-*`, and `grok-*`. With no family match, use Reviewer A's default. If it rejects a table default, check the valid slugs in the Task tool's error message, pick the closest equivalent (prefer the highest-reasoning tier of the same family), spawn with it, and open a separate PR to update the default table. Do not block the review on the slug issue. Never treat an alias entry as a rejected slug or apply either fallback to it.",
-      "If the `subagent` tool rejects an entry, look up the closest model of the same family with `opencode.models` (prefer the highest-reasoning variant), spawn with it, and say so. Families go by model id: `claude-*`, `gpt-*`, and `grok-*`. Do not block the review on a model issue. Never treat `inherit-parent` as a rejected model.",
+      "If the Task tool rejects a configured entry, run that reviewer on the table default of its family and say so. Families go by prefix: `claude-*` and `grok-*`. With no family match, use Reviewer A's default. If it rejects a table default, check the valid slugs in the Task tool's error message, pick the closest equivalent (prefer the same family and reasoning tier), spawn with it, and open a separate PR to update the default table. Do not block the review on the slug issue. Never treat an alias entry as a rejected slug or apply either fallback to it.",
+      "If the `subagent` tool rejects an entry, look up the closest model of the same family and reasoning tier with `opencode.models`, spawn with it, and say so. Do not block the review on a model issue. Never treat `inherit-parent` as a rejected model.",
     ],
     ["- `subagent_type`: `generalPurpose`\n", ""],
   ],
   "skills/arena/SKILL.md": [
     [
-      "Use the `arena runners` line in `~/.cursor/rules/pstack-models.mdc`. If the rule or that line is missing, default to one each on `claude-opus-5-5-max`, `gpt-5.6-sol-max`, `grok-4.7-xhigh-fast`. An `auto` or `inherit-parent` entry in this line or the cross-judge line means the parent model, so omit `model` for it. If the Task tool rejects a configured entry, run that seat on its family's default and say so. Families go by prefix: `claude-*`, `gpt-*`, and `grok-*`. With no family match, use `claude-opus-5-5-max`. If it rejects a default, use the closest valid slug of the same family from its error message.",
-      "Use the `arena runners` role from `pstack_roles`. The default is one each from the claude, gpt, and grok families. The user chose these models for pstack, so passing them is an explicit model request. An `inherit-parent` entry in this role or the cross-judge role means the parent model, so omit `model` for it. If the `subagent` tool rejects an entry, run that seat on the closest model of its family from `opencode.models` and say so. Families go by model id: `claude-*`, `gpt-*`, and `grok-*`.",
+      "Use the `arena runners` line in `~/.cursor/rules/pstack-models.mdc`. If the rule or that line is missing, default to one each on `claude-opus-5-5-xhigh` and `grok-4.7-xhigh-fast`. An `auto` or `inherit-parent` entry in this line or the cross-judge line means the parent model, so omit `model` for it. If the Task tool rejects a configured entry, run that seat on its family's default and say so. Families go by prefix: `claude-*` and `grok-*`. With no family match, use `claude-opus-5-5-xhigh`. If it rejects a default, use the closest valid slug of the same family from its error message.",
+      "Use the `arena runners` role from `pstack_roles`. The default is one each from the claude and grok families. The user chose these models for pstack, so passing them is an explicit model request. An `inherit-parent` entry in this role or the cross-judge role means the parent model, so omit `model` for it. If the `subagent` tool rejects an entry, run that seat on the closest model of its family from `opencode.models` and say so.",
     ],
     [
-      "choose one model from the `arena cross-judge pool` line in `~/.cursor/rules/pstack-models.mdc`. If the rule or that line is missing, choose from `claude-opus-5-5-max`, `gpt-5.6-sol-max`, `grok-4.7-xhigh-fast`. Prefer a different model family from the parent's. Spawn one readonly judge subagent on that model.",
+      "choose one model from the `arena cross-judge pool` line in `~/.cursor/rules/pstack-models.mdc`. If the rule or that line is missing, choose from `claude-opus-5-5-xhigh` and `grok-4.7-xhigh-fast`. Prefer a different model family from the parent's. Spawn one readonly judge subagent on that model.",
       "choose one model from the `arena cross-judge pool` role in `pstack_roles`. Prefer a different model family from the parent's. Spawn one read-only judge subagent (`agent: explore`) on that model.",
     ],
     ["(a git worktree where possible, otherwise `/tmp/arena-<slug>/candidate-<n>/`)", "(its own worktree where possible, via `rift.create` or `git worktree add`, otherwise `/tmp/arena-<slug>/candidate-<n>/`)"],
   ],
   "skills/architect/SKILL.md": [
     [
-      "Take the runners from the `architect runners` line in the `pstack-models.mdc` rule, in place of the `arena runners` line. If the rule or that line is missing, use `claude-opus-5-5-max`, `gpt-5.6-sol-max`, `grok-4.7-xhigh-fast`. Alias and rejected entries follow the runner rules in the **arena** skill's Phase A.",
+      "Take the runners from the `architect runners` line in the `pstack-models.mdc` rule, in place of the `arena runners` line. If the rule or that line is missing, use `claude-opus-5-5-xhigh` and `grok-4.7-xhigh-fast`. Alias and rejected entries follow the runner rules in the **arena** skill's Phase A.",
       "Take the runners from the `architect runners` role in `pstack_roles`, in place of the `arena runners` role. `inherit-parent` and rejected entries follow the runner rules in the **arena** skill's Phase A.",
     ],
   ],
@@ -115,7 +115,7 @@ export const patches: Record<string, Array<[string, string]>> = {
     ["**Use `subagent_type: \"poteto-agent\"` for any subagent you spawn inside a playbook step**", "**Use `agent: \"poteto-agent\"` for any subagent you spawn inside a playbook step**"],
     ["set their own `subagent_type` for diverse-model review.", "set their own `agent` for diverse-model review."],
     [
-      "**Defaults for every `Task` call.** `run_in_background: true`, agent mode (readonly strips MCP), file pointers not inlined context, explicit model per role (configurable via `/setup-pstack`. Defaults `grok-4.7-xhigh-fast` for code, `claude-opus-5-5-max` for prose and judgment). Code delegates tier by difficulty. The hardest changes (cross-cutting design, gnarly concurrency, subtle algorithms) go to your strongest judgment model (`claude-opus-5-5-max`),",
+      "**Defaults for every `Task` call.** `run_in_background: true`, agent mode (readonly strips MCP), file pointers not inlined context, explicit model per role (configurable via `/setup-pstack`. Defaults `grok-4.7-xhigh-fast` for code, `claude-opus-5-5-xhigh` for prose and judgment). Code delegates tier by difficulty. The hardest changes (cross-cutting design, gnarly concurrency, subtle algorithms) go to your strongest judgment model (`claude-opus-5-5-xhigh`),",
       "**Defaults for every `subagent` call.** `background: true`, a full-access agent (`poteto-agent` or `general`, never `explore` when the work writes or needs MCP), file pointers not inlined context, explicit model per role from `pstack_roles` (configurable via `/setup-pstack`. Defaults a grok model for code, a claude opus model for prose and judgment). The user chose these models for pstack, so passing them is an explicit model request. Code delegates tier by difficulty. The hardest changes (cross-cutting design, gnarly concurrency, subtle algorithms) go to your strongest judgment model (the `hardest tasks` role),",
     ],
     [
@@ -135,7 +135,6 @@ export const patches: Record<string, Array<[string, string]>> = {
   "skills/poteto-mode/playbooks/visual-parity.md": [["`/loop` per component until the diff is zero.", "Loop per component with `pstack_loop` until the diff is zero."]],
   "skills/poteto-mode/playbooks/opening-a-pr.md": [
     ["Run `/deslop` from `cursor-team-kit` over the diff before commit.", "Run `/deslop` over the diff before commit."],
-    ["Cloud-agent PR tools default to draft, so set `draft: false` on every PR creation call.", "Set `draft: false` on every PR creation call that takes one."],
   ],
   "skills/poteto-mode/playbooks/babysit.md": [
     [" This playbook replaces Cursor's built-in babysit skill for these requests, so do not route there even though its description matches the same words.", ""],
@@ -154,7 +153,7 @@ export const patches: Record<string, Array<[string, string]>> = {
       `Browser, Electron, and web UIs use ${CONTROL_UI}. CLIs and TUIs use ${CONTROL_CLI}.`,
     ],
     ["A surface with no control skill is a risk", "A surface with no driver is a risk"],
-    ["In a local session, a real terminal `/loop`. In a cloud root, a cloud-sleeper wake chain.", "Arm it with `pstack_loop` and `every: \"30m\"`."],
+    ["arm the audit tick as `/loop 1h` with the tick prompt below.", "arm the audit tick as `/loop 1h`, using `pstack_loop` with `every: \"1h\"` and the tick prompt below."],
     ["Each live lane runs on its own cloud VM at the PR head. Drive through `control-ui` or `control-cli` from `cursor-team-kit`.", `Each live lane runs in ${WORKTREE} at the PR head. Drive through ${CONTROL_UI} or ${CONTROL_CLI}.`],
   ],
   "skills/poteto-mode/playbooks/autopilot-full.md": [
@@ -162,16 +161,16 @@ export const patches: Record<string, Array<[string, string]>> = {
     ["a slop-strip (the `deslop` skill from the `cursor-team-kit` plugin (`/deslop`))", `a slop-strip (${DESLOP})`],
     ["(with the matching control skill, such as `control-cli` or `control-ui` from `cursor-team-kit`, or a named driver where none exists)", `(with ${CONTROL_UI}, ${CONTROL_CLI}, or a named driver where neither fits)`],
     [
-      "A local root arms each tick as a real terminal `/loop`. The loop uses a monitored-shell 30-minute sleep and emits an output-notification sentinel. A cloud root uses the existing cloud-sleeper wake chain instead.",
-      "The root arms each tick with `pstack_loop` and `every: \"30m\"`.",
+      "On the operator's go, arm `/loop 1h` with a prompt that runs this tick. `/loop` works in local and cloud roots.",
+      "On the operator's go, arm `pstack_loop` with `every: \"1h\"` and a prompt that runs this tick.",
     ],
   ],
   "skills/poteto-mode/playbooks/autopilot-stack.md": [
     ["One Cursor cloud agent per PR owns its change end to end:", `One background subagent per PR, in ${WORKTREE}, owns its change end to end:`],
     ["a slop-strip (the `deslop` skill from the `cursor-team-kit` plugin (`/deslop`))", `a slop-strip (${DESLOP})`],
     [
-      "A local root arms each tick as a real terminal `/loop`. The loop uses a monitored-shell 30-minute sleep and emits an output-notification sentinel. A cloud root uses the existing cloud-sleeper wake chain instead.",
-      "The root arms each tick with `pstack_loop` and `every: \"30m\"`.",
+      "On the operator's go, the root arms `/loop 1h` with a prompt that runs this tick, per Autopilot-full step 6.",
+      "On the operator's go, the root arms `pstack_loop` with `every: \"1h\"` and a prompt that runs this tick, per Autopilot-full step 6.",
     ],
   ],
   "skills/poteto-mode/playbooks/orchestrate.md": [

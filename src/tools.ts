@@ -58,7 +58,7 @@ export async function registerTools(ctx: Context, loops: Loops) {
             additionalProperties: { anyOf: [{ type: "string" }, { type: "array", items: { type: "string" } }] },
             description: "Role label to `providerID/modelID[#variant]`, or an array of them for panels.",
           },
-          budget: { type: "string", description: "One of: unlimited, large, medium, small." },
+          budget: { type: "string", enum: ["unlimited", "large", "medium", "small"], description: "Reasoning budget for unset roles." },
           reset: { type: "boolean", description: "Drop stored roles before applying `roles`." },
         },
         additionalProperties: false,
@@ -68,7 +68,7 @@ export async function registerTools(ctx: Context, loops: Loops) {
         const result = await roles(ctx, tool.sessionID, input as RolesInput)
         return {
           content: [
-            `budget: ${result.budget ?? "unlimited (default)"}`,
+            `budget: ${result.budget ?? "large (default)"}`,
             ...result.roles.map((item) => `${item.role}: ${[item.value].flat().join(", ")}${item.source === "default" ? " (default)" : ""}`),
           ].join("\n"),
         }

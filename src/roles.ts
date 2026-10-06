@@ -1,14 +1,12 @@
 import type { Context } from "@opencode/plugin/promise/plugin"
 
 type Effort = "max" | "xhigh" | "high" | "medium" | "low"
-type Family = { readonly pattern: RegExp; readonly effort: Effort }
+type Family = { readonly pattern: RegExp }
 
-const judgment: Family = { pattern: /^claude-opus-/, effort: "max" }
-const code: Family = { pattern: /^grok-\d/, effort: "xhigh" }
-const tooling: Family = { pattern: /^gpt-[\d.]+-sol$/, effort: "max" }
-const panel = [judgment, tooling, code]
+const judgment: Family = { pattern: /^claude-opus-/ }
+const code: Family = { pattern: /^grok-\d/ }
+const panel = [judgment, code]
 
-// pstack's upstream split: grok for code, claude opus for judgment and prose, a gpt sol model for diversity.
 const defaults: Record<string, Family | readonly Family[]> = {
   "feature, refactoring": code,
   "bug-fix": code,
@@ -20,7 +18,7 @@ const defaults: Record<string, Family | readonly Family[]> = {
   "how explainer": judgment,
   "why investigators": code,
   "why synthesizer": judgment,
-  "reflect tooling": tooling,
+  "reflect tooling": code,
   "reflect judgment, divergent, synthesizer": judgment,
   "arena runners": panel,
   "arena cross-judge pool": panel,
@@ -47,6 +45,8 @@ const MODEL = /^(inherit-parent|[^/\s#]+\/[^#\s]+(#[\w.-]+)?)$/
 const KEY = "roles"
 
 export async function roles(ctx: Context, sessionID: string, input: Input) {
+  if (input.budget !== undefined && !Object.hasOwn(budgets, input.budget))
+    throw new Error("Unknown budget. Use unlimited, large, medium, or small.")
   const current = ((await ctx.storage.get(KEY)) ?? { roles: {} }) as unknown as Stored
   const write = input.roles !== undefined || input.budget !== undefined || input.reset === true
   if (write) Object.entries(input.roles ?? {}).forEach(([role, value]) => validate(role, value))
@@ -62,7 +62,7 @@ export async function roles(ctx: Context, sessionID: string, input: Input) {
     ctx.model.list(),
     ctx.model.default(),
   ])
-  const pick = picker(models.data, session.model?.providerID ?? fallback.data?.providerID, budgets[stored.budget?.split(" ")[0] ?? ""] ?? "max")
+  const pick = picker(models.data, session.model?.providerID ?? fallback.data?.providerID, budgets[stored.budget?.split(" ")[0] ?? ""] ?? "xhigh")
   const options = (ctx.options.roles ?? {}) as Record<string, Value>
   return {
     budget: stored.budget ?? null,
@@ -83,8 +83,7 @@ function picker(models: Available, provider: string | undefined, cap: Effort) {
       .filter((model) => family.pattern.test(model.id))
       .toSorted((a, b) => Number(b.providerID === provider) - Number(a.providerID === provider) || b.time.released - a.time.released)[0]
     if (!match) return "inherit-parent"
-    const target = ladder[Math.max(ladder.indexOf(family.effort), ladder.indexOf(cap))]!
-    const variant = ladder.slice(ladder.indexOf(target)).find((effort) => match.variants.some((item) => item.id === effort))
+    const variant = ladder.slice(ladder.indexOf(cap)).find((effort) => match.variants.some((item) => item.id === effort))
     return `${match.providerID}/${match.id}${variant ? `#${variant}` : ""}`
   }
 }
