@@ -1,5 +1,5 @@
 // Regenerates skills/ and agents/ from vendor/: exact patches, then generic rewrites, then overlay files.
-// Fails when a patch no longer matches upstream or a Cursor mechanism survives the port.
+// Fails, listing every case, when a patch no longer matches upstream or a Cursor mechanism survives the port.
 import { cp, mkdir, readdir, rm } from "node:fs/promises"
 import path from "node:path"
 import { drop, patches } from "../overlay/patches.ts"
@@ -58,10 +58,12 @@ const CURSOR = /grok-4\.|claude-opus-5|gpt-5\.6|`readonly`|readonly\/Ask|\.curso
 // `why` asks for the user's editor cursor location, which is not Cursor the product.
 const allowed = [/cursor location/]
 
+const stale: string[] = []
 const port = (file: string, text: string) => {
   const patched = (patches[file] ?? []).reduce((result, [find, replace]) => {
-    if (!result.includes(find)) throw new Error(`patch no longer matches ${file}:\n${find.slice(0, 160)}…`)
-    return result.replace(find, replace)
+    if (result.includes(find)) return result.replace(find, replace)
+    stale.push(`${file}: ${find.slice(0, 160)}…`)
+    return result
   }, text)
   return rewrites.reduce(
     (result, [pattern, replacement]) => result.replace(pattern, replacement as (substring: string, ...args: string[]) => string),
@@ -105,8 +107,7 @@ const residue = (
     ),
   )
 ).flat()
-if (residue.length) {
-  console.error(residue.join("\n"))
-  throw new Error(`${residue.length} lines still name Cursor mechanisms`)
-}
+if (stale.length) console.error(`patches that no longer match upstream:\n${stale.join("\n")}\n`)
+if (residue.length) console.error(`lines that still name Cursor mechanisms:\n${residue.join("\n")}\n`)
+if (stale.length || residue.length) throw new Error(`${stale.length} stale patches, ${residue.length} Cursor lines`)
 console.log(`ported ${skillNames.length} skills and ${files.filter(({ file }) => file.startsWith("agents/")).length} agents`)
