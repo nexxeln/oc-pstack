@@ -24,7 +24,7 @@ Then the same two steps as upstream:
 
 Updates preserve saved model choices. A previous setup can still pin Sol and three-model panels after the defaults change. To adopt the current Opus/Grok defaults, explicitly change those roles during `/setup-pstack`.
 
-Every other pstack skill is a slash command too: `/poteto-help`, `/correct`, `/benchmark-checklist`, `/how`, `/why`, `/interrogate`, `/arena`, `/swarm`, `/reflect`, `/recall`, `/no-comments`, `/unslop`, `/tdd`, … Principles attach as `@pstack-principle-<name>`.
+Every other pstack skill is a slash command too: `/poteto-help`, `/ketchup`, `/sharpen`, `/statechart`, `/correct`, `/benchmark-checklist`, `/how`, `/why`, `/interrogate`, `/arena`, `/swarm`, `/reflect`, `/recall`, `/no-comments`, `/unslop`, `/tdd`, … Principles attach as `@pstack-principle-<name>`.
 
 ## How each pstack mechanism maps to OpenCode
 
@@ -34,6 +34,8 @@ Every other pstack skill is a slash command too: `/poteto-help`, `/correct`, `/b
 | `poteto-agent`, `Comment Sicko` subagents | `poteto-agent`, `comment-sicko`. Edits by Comment Sicko are denied through the permission `evaluate` hook |
 | `Task` with `subagent_type`, `run_in_background`, `readonly` | the `subagent` tool with `agent`, `background`; read-only roles use `explore` |
 | `~/.cursor/rules/pstack-models.mdc` | `pstack_roles`, stored in plugin storage. Unset roles resolve to the newest claude opus and grok, preferring your provider. The default budget is `large`, with `xhigh` reasoning. Stored choices override these defaults |
+| per-spawn reasoning level and `-fast` slugs | the model's `#variant`. There is no fast/standard speed switch |
+| the agent's store directory, Project tracker and store | `~/.local/share/pstack/<repo>/`, outside the repo |
 | the todo list | `pstack_todo`, shown in the session sidebar (TUI entry) |
 | `/loop` | `/loop [30m] <prompt>` for you, `pstack_loop` for the agent. Dynamic mode re-prompts when the session goes idle; it stops on failure or a user interrupt |
 | `/goal` | `pstack_goal`, restated to the agent every turn until cleared |
@@ -42,12 +44,13 @@ Every other pstack skill is a slash command too: `/poteto-help`, `/correct`, `/b
 | `deslop` (cursor-team-kit) | bundled as `/deslop`, as proposed in cursor/plugins#371 |
 | `control-ui`, `control-cli` (cursor-team-kit) | OpenCode's `browser` tools and a shell-driven terminal |
 | `create-skill` | `skill-creator` when installed, else OpenCode's SKILL.md format |
+| `/visualize` (in `/ketchup`) | a chart rendered to an image |
 | `make-bot-ui` | dropped. It only drives Cursor's Grok Bot webhooks |
 
 ## Development
 
-- `vendor/pstack` is upstream's `skills/` and `agents/`, unedited. `vendor/cursor-team-kit` holds `deslop`, which pstack calls but doesn't ship. `vendor/UPSTREAM` records the commits.
-- `skills/` and `agents/` are generated. Don't edit them by hand. `overlay/patches.ts` holds exact passage rewrites, and `overlay/skills/` holds files that replace upstream's outright. `scripts/port.ts` applies the patches, then table-driven renames, then the overlay. It fails when a patch no longer matches upstream or when a Cursor mechanism survives, so an upstream bump shows exactly what to re-port.
+- `vendor/pstack` is upstream's `skills/` and `agents/`, unedited, without statechart's 3.6 MB of test fixtures. `vendor/cursor-team-kit` holds `deslop`, which pstack calls but doesn't ship. `vendor/UPSTREAM` records the commits.
+- `skills/` and `agents/` are generated. Don't edit them by hand. `overlay/patches.ts` holds exact passage rewrites, and `overlay/skills/` holds files that replace upstream's outright. `scripts/port.ts` applies the patches, then table-driven renames, then the overlay. It fails when a patch no longer matches upstream or when a Cursor mechanism survives, and lists every case at once, so an upstream bump shows exactly what to re-port.
 - `src/` is the plugin: `index.ts` (server) and `tui.tsx` (sidebar). `server.ts` and `tui.ts` are the entry points OpenCode resolves for a local directory.
 - To work on the plugin, add your clone's absolute path to `plugins` in your global config. OpenCode hot-reloads it when the code changes, but not when only `skills/` or `agents/` change, so restart OpenCode after `bun run port`. Don't also load it from a project config: a second entry with the same plugin ID fails to load.
 
@@ -77,7 +80,9 @@ To update upstream, copy `skills/` and `agents/` from a newer `cursor/plugins` c
 
 Early. Tested against OpenCode 2.0.16: skills, agents, and commands register; `/loop`, `pstack_goal`, `pstack_roles`, the todo RPC, and Comment Sicko's edit deny work end to end. The session tools read OpenCode's database directly (gap 1), so a schema change in OpenCode can break them until the plugin API exposes sessions. Not yet exercised: the sidebar in a real TUI, `/setup-pstack` end to end, and a full playbook run.
 
-Upstream snapshot is pstack 0.15.15 at `df581122`. See `vendor/UPSTREAM` for the full revision.
+`/statechart` runs its TLC wrapper under Bun. Its first run installs TLC and Java with `mise`. Without `mise`, set `TLA2TOOLS` to a `tla2tools.jar` and `JAVA` to Java 11 or later.
+
+Upstream snapshot is pstack 0.15.36 at `4dd1d058`. See `vendor/UPSTREAM` for the full revision.
 
 ## License
 

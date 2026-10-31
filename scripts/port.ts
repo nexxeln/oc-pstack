@@ -21,8 +21,8 @@ const roleOf = (name: string) => (name === "feature" ? "feature, refactoring" : 
 const rewrites: Array<[RegExp, string | ((match: string, ...groups: string[]) => string)]> = [
   [/- `subagent_type`: `generalPurpose`\n((?:- .*\n)*?)- `readonly`: `true`/g, "- `agent`: `explore` (read-only)\n$1"],
   [/the `([a-z ,-]+)` model \(default `[^`]+`\)/g, "the `$1` role from `pstack_roles`"],
-  [/subagent_type: "poteto-agent"/g, 'agent: "poteto-agent"'],
-  [/subagent_type: "Comment Sicko"/g, 'agent: "comment-sicko"'],
+  [/subagent_type: "([a-z-]+)"/g, 'agent: "$1"'],
+  [/reasoning level and fast or standard speed/g, "reasoning variant"],
   [/`subagent_type`: `generalPurpose`/g, "`agent`: `general`"],
   [/`subagent_type: generalPurpose`/g, '`agent: "general"`'],
   [/subagent_type: generalPurpose/g, 'agent: "general"'],
@@ -35,6 +35,7 @@ const rewrites: Array<[RegExp, string | ((match: string, ...groups: string[]) =>
   [/`Task` calls/g, "`subagent` calls"],
   [/`Task` call\b/g, "`subagent` call"],
   [/`Task` (prompts|response|subagent|with)/g, "`subagent` $1"],
+  [/\bTask spawn/g, "`subagent` spawn"],
   [/`Task`/g, "`subagent`"],
   [/`AskQuestion`/g, "the `question` tool"],
   [/\bAskQuestion\b/g, "the `question` tool"],
@@ -54,7 +55,7 @@ const rewrites: Array<[RegExp, string | ((match: string, ...groups: string[]) =>
   ]),
 ]
 
-const CURSOR = /grok-4\.|claude-opus-5|gpt-5\.6|`readonly`|readonly\/Ask|\.cursor\b|agent-transcripts|pstack-models|subagent_type|run_in_background|AskQuestion|readonly: |environment: "|cloud_base_branch|cursor-team-kit|control-(ui|cli)|cloud[ -](agent|root|vm|worker)|\bCursor\b/i
+const CURSOR = /grok-4\.|claude-opus-5|gpt-5\.6|`readonly`|readonly\/Ask|\.cursor\b|agent-transcripts|pstack-models|subagent_type|run_in_background|AskQuestion|readonly: |environment: "|cloud_base_branch|cursor-team-kit|control-(ui|cli)|cloud[ -](agent|root|vm|worker)|\/visualize|system prompt names|path in the system prompt|Project (tracker|store)|\bCursor\b/i
 // `why` asks for the user's editor cursor location, which is not Cursor the product.
 const allowed = [/cursor location/]
 

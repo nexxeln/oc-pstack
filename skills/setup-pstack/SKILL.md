@@ -32,7 +32,7 @@ Call `pstack_roles` with no arguments. It returns every role, its current value,
 
 - Grok handles `feature, refactoring`, `bug-fix`, `perf-issue`, `hillclimb`, `how explorer`, `why investigators`, `swarm workers`, and `reflect tooling` by default.
 - Opus handles `judgment and prose`, `hardest tasks`, `how explainer`, `why synthesizer`, and `reflect judgment, divergent, synthesizer` by default.
-- Panels default to one Opus and one Grok. `arena runners`, `architect runners`, and `interrogate reviewers` spawn one subagent per entry. `arena cross-judge pool` is also a list, but Arena selects one entry, preferably from a different family than the parent. Users can choose other detected models or panel sizes.
+- Panels default to one Opus and one Grok. `arena runners`, `architect runners`, and `interrogate reviewers` spawn one subagent per entry. `arena cross-judge pool` is also a list, but Arena runs one judge. It tries only entries from a family other than the parent's, in list order, so order it by preference. An `inherit-parent` entry never judges. Users can choose other detected models or panel sizes.
 
 Show every role with its proposed value. Confirm with `question`, offering the detected models plus `inherit-parent`.
 
@@ -51,3 +51,7 @@ Tell the user the roles are stored and apply to the next subagent spawn.
 ### 7. Offer a verification skill (optional)
 
 If the project has no `verify-*` skill or harness that drives the real app, offer once to create one with `pstack-create-verification-skill`. On no, move on.
+
+### 8. Offer a formal verification skill (optional)
+
+If the project has no formal verification skill (a project skill that runs a model checker, a proof, or another verifier against the code), offer once to create one with `pstack-create-formal-verification-skill`, so agents can prove a key property holds in every case in scope, not only the cases tests reach. On no, move on.

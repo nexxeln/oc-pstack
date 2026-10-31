@@ -1,8 +1,8 @@
 repo: https://github.com/cursor/plugins
 path: pstack
-commit: df581122cde17e6e27686b5a448bde23e4ad4318
-version: 0.15.15
-contents: agents/, skills/, LICENSE, README.md, .cursor-plugin/plugin.json. Omitted because nothing here uses them: assets/, docs/, automations/.
+commit: 4dd1d05818d19792e7cd6e818f1667f95f7e1dbe
+version: 0.15.36
+contents: agents/, skills/, LICENSE, README.md, .cursor-plugin/plugin.json. Omitted because nothing here uses them: assets/, docs/, automations/, plugin.json, and skills/statechart/scripts/test/ (3.6 MB of TLC fixtures for upstream's own test suite).
 
-cursor-team-kit (same repo, commit 7022c81efb48d8b5eb15498ce6043a3bd74b694c): skills/deslop/SKILL.md and LICENSE.
+cursor-team-kit (same repo, commit 7022c81efb48d8b5eb15498ce6043a3bd74b694c, unchanged at 4dd1d05): skills/deslop/SKILL.md and LICENSE.
 pstack calls /deslop before every commit but ships it only in cursor-team-kit; cursor/plugins#371 proposes bundling it.

@@ -3,14 +3,19 @@
 
 const ROLE_RULE =
   "Each spawn below names a role line in the `pstack-models.mdc` rule and a default. Set `model` to that line's value, or to the default if the rule or the line is missing. Leave `model` unset when the value is `auto` or `inherit-parent`. If the Task tool rejects a slug, use the default and say so. If it rejects the default, use the closest valid slug of the same family from its error message."
-const ROLE_NATIVE =
-  "Each spawn below names a role. Read the roles once with `pstack_roles` and set the subagent `model` to that role's value. The user chose these models for pstack, so passing them is an explicit model request. Leave `model` unset when the value is `inherit-parent`. If the `subagent` tool rejects a model, look up the closest model of the same family with `opencode.models`, use it, and say so."
+const ROLE_READ =
+  "Read the roles once with `pstack_roles` and set the subagent `model` to that role's value. The user chose these models for pstack, so passing them is an explicit model request. Leave `model` unset when the value is `inherit-parent`. If the `subagent` tool rejects a model, look up the closest model of the same family with `opencode.models`, use it, and say so."
+const ROLE_NATIVE = `Each spawn below names a role. ${ROLE_READ}`
 
 const WORKTREE = "its own worktree (`rift.create` when available, otherwise `git worktree add`)"
 const CONTROL_UI = "OpenCode's `browser` tools"
 const CONTROL_CLI = "a real terminal driven through the shell"
 const DESLOP = "`/deslop`"
+// Cursor gives each agent a store directory and names it in the system prompt. OpenCode has none.
+const STORE = "a store directory outside the repo (`~/.local/share/pstack/<repo>/`)"
 const SKILL_FORMAT = "the `skill-creator` skill when installed, otherwise OpenCode's skill format (a `SKILL.md` with `name` and `description` frontmatter)"
+
+const SKILL_USED = "a `Read` of its `SKILL.md` (under `.cursor/skills/`, `~/.cursor/skills/`, or `~/.cursor/plugins/`)"
 
 const DEPTH =
   "OpenCode limits nesting with `experimental.subagent_depth` (default 1), so a delegate may be unable to spawn its own subagents. On a depth error, run that fan-out from the parent session and say so."
@@ -18,71 +23,64 @@ const DEPTH =
 export const drop = ["skills/make-bot-ui"]
 
 export const patches: Record<string, Array<[string, string]>> = {
-  "skills/how/SKILL.md": [[ROLE_RULE, ROLE_NATIVE]],
+  "skills/how/SKILL.md": [
+    [
+      "Every spawn is a Task subagent with `subagent_type: generalPurpose` and `readonly: true`. Explorers use the `how explorer` line in the `pstack-models.mdc` rule (default `grok-4.7-xhigh-fast`), and every explainer uses the `how explainer` line (default `claude-opus-5-5-xhigh`). Set `model` to that line's value, or to the default if the rule or the line is missing. Leave `model` unset when the value is `auto` or `inherit-parent`. If the Task tool rejects a slug, use the default and say so. If it rejects the default, use the closest valid slug of the same family from its error message.",
+      `Every spawn is a \`subagent\` call with \`agent: "explore"\` (read-only). Explorers use the \`how explorer\` role, and every explainer uses the \`how explainer\` role. ${ROLE_READ}`,
+    ],
+  ],
   "skills/why/SKILL.md": [
     [ROLE_RULE, ROLE_NATIVE],
+    [
+      "Every spawn is `generalPurpose` with `readonly: false` (agent mode). **Do not use readonly/Ask mode.** It strips MCP access, which disables the MCP-backed investigators and the synthesizer's citation spot-checks.",
+      'Every spawn is `agent: "general"`. **Never use `explore`.** It has no MCP access, which disables the MCP-backed investigators and the synthesizer\'s citation spot-checks.',
+    ],
     [
       "list the available MCPs from the Cursor environment. Use the available-tools map when present. Otherwise inspect the `mcps/` directory Cursor exposes for enabled MCP servers.",
       "list the available MCP servers. They are the namespaces in your code-mode tool catalog and the `mcp_instructions` in your context. Search the catalog with `search` inside `execute` when a namespace is collapsed.",
     ],
-    [
-      "- `readonly`: `false` (agent mode). **Do not use readonly/Ask mode.** It strips MCP access, which disables MCP-backed investigators entirely. Investigators still shouldn't write anything.",
-      "- Never `explore`: MCP-backed investigators need the full tool set. Investigators still shouldn't write anything.",
-    ],
-    [
-      "- `readonly`: `false` (agent mode). The synthesizer's quality check spot-verifies citations, which can require MCP access. Readonly/Ask mode strips MCPs and defeats that.",
-      "- Never `explore`: the synthesizer's quality check spot-verifies citations, which can require MCP access.",
-    ],
   ],
   "skills/reflect/SKILL.md": [
-    [ROLE_RULE.replace("Each spawn below names", "Each reviewer and the synthesizer name"), ROLE_NATIVE.replace("Each spawn below names a role", "Each reviewer and the synthesizer name a role")],
-    [", with `model` set as below, agent mode (`readonly: false`).", ", with `model` set as below."],
     [
-      "One `Task` call, `subagent_type: generalPurpose`, with `model` from the `reflect judgment, divergent, synthesizer` line (default `claude-opus-5-5-xhigh`), agent mode (`readonly: false`).",
-      'One `subagent` call, `agent: "general"`, with `model` from the `reflect judgment, divergent, synthesizer` role.',
+      "find this conversation's transcript in the `agent-transcripts/` directory the system prompt names. Do not glob across `~/.cursor/projects/*/`. That crosses workspace boundaries and reads private chats from unrelated projects.\n\n```bash\nls -t <agent-transcripts>/*.jsonl <agent-transcripts>/*/*.jsonl <agent-transcripts>/*/subagents/*.jsonl 2>/dev/null | head -10\n```\n\nThat covers the legacy flat (`<id>.jsonl`), current nested (`<id>/<id>.jsonl`), and subagent (`<parent>/subagents/<child>.jsonl`) layouts. For each candidate, read the first JSONL line. Take the file whose `message.content[0].text` contains the conversation's opening user prompt. If none matches, pass a tight digest of the session instead.",
+      "render this conversation with `pstack.transcript({ file: true })` and no `sessionID`. It writes this session as markdown with `[#seq]` anchors and returns the path. The `pstack.*` session tools only see the current project. Never ask for another project's sessions. The transcript header lists subagent sessions. Render one with `pstack.transcript({ sessionID, file: true })` when a reviewer needs it. If the render fails, pass a tight digest of the session instead.",
     ],
-    [" Reviewers need MCP access for context lookups (tickets, chat threads, observability traces referenced in the transcript). Readonly strips MCPs.", " Reviewers need MCP access for context lookups (tickets, chat threads, observability traces referenced in the transcript), which `general` has."],
-    [" The synthesizer's quality check includes spot-verifying citations, which can require MCP access. Readonly strips MCPs.", " The synthesizer's quality check includes spot-verifying citations, which can require MCP access."],
+    [
+      "One message, three `Task` calls, `subagent_type: generalPurpose`, agent mode (`readonly: false`). Reviewers need MCP access to look up the tickets, chat threads, and observability traces the transcript references, and readonly strips MCPs.",
+      'One message, three `subagent` calls, `agent: "general"`. Reviewers need MCP access to look up the tickets, chat threads, and observability traces the transcript references, and `explore` has none.',
+    ],
+    [ROLE_RULE.replace("Each spawn below names", "Each reviewer and the synthesizer name"), ROLE_NATIVE.replace("Each spawn below names a role", "Each reviewer and the synthesizer name a role")],
     ["| Lens | Role line | Default `model` | Prompt template |\n|---|---|---|---|", "| Lens | Role | Prompt template |\n|---|---|---|"],
     ["| `reflect judgment, divergent, synthesizer` | `claude-opus-5-5-xhigh` | `references/judgment-reviewer.md` |", "| `reflect judgment, divergent, synthesizer` | `references/judgment-reviewer.md` |"],
     ["| `reflect tooling` | `grok-4.7-xhigh-fast` | `references/tooling-reviewer.md` |", "| `reflect tooling` | `references/tooling-reviewer.md` |"],
     ["| `reflect judgment, divergent, synthesizer` | `claude-opus-5-5-xhigh` | `references/divergent-reviewer.md` |", "| `reflect judgment, divergent, synthesizer` | `references/divergent-reviewer.md` |"],
     [
-      "The parent finds its own transcript file before fanning out. The system prompt names the active workspace's `agent-transcripts/` directory. Use that path. Do not glob across `~/.cursor/projects/*/`. That crosses workspace boundaries and reads private chats from unrelated projects.",
-      'The parent renders its own session before fanning out. Call `pstack.transcript({ file: true })` with no `sessionID`. It writes this session as markdown with `[#seq]` anchors and returns the path. The `pstack.*` session tools only see the current project. Never ask for another project\'s sessions.',
-    ],
-    ["```bash\nls -t <agent-transcripts>/*.jsonl <agent-transcripts>/*/*.jsonl <agent-transcripts>/*/subagents/*.jsonl 2>/dev/null | head -10\n```\n\n", ""],
-    [
-      "Three transcript layouts: legacy flat (`<id>.jsonl`), current nested (`<id>/<id>.jsonl`), and subagent (`<parent>/subagents/<child>.jsonl`).\n\nFor each candidate, read the first JSONL line and check that `message.content[0].text` contains the conversation's opening user prompt. Take the matching path. If no path resolves, write a tight digest of the session and pass that instead.",
-      "Subagent sessions are listed in the transcript header. Render one with `pstack.transcript({ sessionID, file: true })` when a reviewer needs it. If the render fails, write a tight digest of the session and pass that instead.",
-    ],
-  ],
-  "skills/interrogate/SKILL.md": [
-    [
-      "Use the `interrogate reviewers` line in `~/.cursor/rules/pstack-models.mdc`, one reviewer per entry, extending or shrinking the Reviewer A/B labels below to the configured entry count. If the rule or that line is missing, use the table defaults.\n\n| Subagent | Default model |\n|----------|---------------|\n| Reviewer A | `claude-opus-5-5-xhigh` |\n| Reviewer B | `grok-4.7-xhigh-fast` |",
-      "Use the `interrogate reviewers` role from `pstack_roles`, one reviewer per entry, labelled Reviewer A, B, C, and onward to the entry count. The default panel is one model each from the claude and grok families.",
+      "One `Task` call, `subagent_type: generalPurpose`, `model` from the `reflect judgment, divergent, synthesizer` line (default `claude-opus-5-5-xhigh`), agent mode (`readonly: false`). It spot-verifies citations through MCP, and readonly strips MCPs.",
+      'One `subagent` call, `agent: "general"`, `model` from the `reflect judgment, divergent, synthesizer` role. It spot-verifies citations through MCP, and `explore` has none.',
     ],
     [
-      "- `model`: the configured `interrogate reviewers` entry, or the table default with no configured line. For an `auto` or `inherit-parent` entry, omit `model` so that reviewer runs on the parent model.\n- `readonly`: `true`",
-      "- `model`: its `interrogate reviewers` entry. The user chose these models for pstack, so passing them is an explicit model request. For an `inherit-parent` entry, omit `model` so that reviewer runs on the parent model.\n- `agent`: `explore` keeps the reviewer read-only. Use `general` when the review needs MCP lookups.",
+      "Never edit a skill under `plugins/cache/`. Before approval, show its destination, `.cursor/skills/<skill>/` or `~/.cursor/skills/<skill>/`.",
+      "Never edit a pstack skill in the plugin's own `skills/` directory. It is generated, and the next update overwrites it. Before approval, show its destination, `.opencode/skills/<skill>/` or `~/.config/opencode/skills/<skill>/`.",
     ],
-    [
-      "If the Task tool rejects a configured entry, run that reviewer on the table default of its family and say so. Families go by prefix: `claude-*` and `grok-*`. With no family match, use Reviewer A's default. If it rejects a table default, check the valid slugs in the Task tool's error message, pick the closest equivalent (prefer the same family and reasoning tier), spawn with it, and open a separate PR to update the default table. Do not block the review on the slug issue. Never treat an alias entry as a rejected slug or apply either fallback to it.",
-      "If the `subagent` tool rejects an entry, look up the closest model of the same family and reasoning tier with `opencode.models`, spawn with it, and say so. Do not block the review on a model issue. Never treat `inherit-parent` as a rejected model.",
-    ],
-    ["- `subagent_type`: `generalPurpose`\n", ""],
   ],
   "skills/arena/SKILL.md": [
     [
-      "Use the `arena runners` line in `~/.cursor/rules/pstack-models.mdc`. If the rule or that line is missing, default to one each on `claude-opus-5-5-xhigh` and `grok-4.7-xhigh-fast`. An `auto` or `inherit-parent` entry in this line or the cross-judge line means the parent model, so omit `model` for it. If the Task tool rejects a configured entry, run that seat on its family's default and say so. Families go by prefix: `claude-*` and `grok-*`. With no family match, use `claude-opus-5-5-xhigh`. If it rejects a default, use the closest valid slug of the same family from its error message.",
-      "Use the `arena runners` role from `pstack_roles`. The default is one each from the claude and grok families. The user chose these models for pstack, so passing them is an explicit model request. An `inherit-parent` entry in this role or the cross-judge role means the parent model, so omit `model` for it. If the `subagent` tool rejects an entry, run that seat on the closest model of its family from `opencode.models` and say so.",
+      "Use the `arena runners` line in `~/.cursor/rules/pstack-models.mdc`. If the rule or that line is missing, default to one each on `claude-opus-5-5-xhigh` and `grok-4.7-xhigh-fast`. An `auto` or `inherit-parent` entry in this line means the parent model, so omit `model` for it. If the Task tool rejects a configured entry, run that seat on its family's default and say so. Families go by prefix: `claude-*`, and `grok-*` with `cursor-grok-*` and `composer-*`. A refused `composer-*` entry runs on `grok-4.7-xhigh-fast`. If the family has no default, or the Task tool rejects that default, use the closest valid slug of the same family from its error message, or drop the seat and say so when there is none.",
+      "Use the `arena runners` role from `pstack_roles`. The default is one each from the claude and grok families. The user chose these models for pstack, so passing them is an explicit model request. An `inherit-parent` entry in this role means the parent model, so omit `model` for it. Families go by model ID: `claude-*`, and `grok-*`. If the `subagent` tool rejects an entry, run that seat on the closest model of its family from `opencode.models`, or drop the seat and say so when there is none.",
     ],
     [
-      "choose one model from the `arena cross-judge pool` line in `~/.cursor/rules/pstack-models.mdc`. If the rule or that line is missing, choose from `claude-opus-5-5-xhigh` and `grok-4.7-xhigh-fast`. Prefer a different model family from the parent's. Spawn one readonly judge subagent on that model.",
-      "choose one model from the `arena cross-judge pool` role in `pstack_roles`. Prefer a different model family from the parent's. Spawn one read-only judge subagent (`agent: explore`) on that model.",
+      "choose one model from the `arena cross-judge pool` line in `~/.cursor/rules/pstack-models.mdc`. If the rule or that line is missing, choose from `claude-opus-5-5-xhigh` and `grok-4.7-xhigh-fast`. Spawn one readonly judge subagent.",
+      "choose one model from the `arena cross-judge pool` role in `pstack_roles`. Spawn one read-only judge subagent (`agent: explore`).",
     ],
+    [
+      "An `auto` or `inherit-parent` entry is the parent model, so it never judges. With the default pool, a Claude parent gets `grok-4.7-xhigh-fast`. A parent from any other family gets `claude-opus-5-5-xhigh` first. If the Task tool rejects an entry, use a valid slug of the same model at the closest level or speed from the error message, or move to the next entry when there is none. If no entry from another family runs, try the default pool's entries from another family the same way.",
+      "An `inherit-parent` entry is the parent model, so it never judges. If the `subagent` tool rejects an entry, use the same model at the closest variant from `opencode.models`, or move to the next entry when there is none. If no entry from another family runs, try the newest claude or grok model from another family the same way.",
+    ],
+    ["or one when the line has one entry", "or one when the role has one entry"],
+    ["try the pool's real slugs in pool order", "try the pool's real models in pool order"],
     ["(a git worktree where possible, otherwise `/tmp/arena-<slug>/candidate-<n>/`)", "(its own worktree where possible, via `rift.create` or `git worktree add`, otherwise `/tmp/arena-<slug>/candidate-<n>/`)"],
   ],
+  "skills/interrogate/SKILL.md": [["Read the `interrogate reviewers` line in place of `arena runners`.", "Read the `interrogate reviewers` role in place of `arena runners`."]],
   "skills/architect/SKILL.md": [
     [
       "Take the runners from the `architect runners` line in the `pstack-models.mdc` rule, in place of the `arena runners` line. If the rule or that line is missing, use `claude-opus-5-5-xhigh` and `grok-4.7-xhigh-fast`. Alias and rejected entries follow the runner rules in the **arena** skill's Phase A.",
@@ -90,15 +88,13 @@ export const patches: Record<string, Array<[string, string]>> = {
     ],
   ],
   "skills/swarm/SKILL.md": [
-    ["Fan out N parallel cloud workers.", "Fan out N parallel background workers."],
-    ["N is total workers, not the cloud concurrency limit.", "N is total workers, not a concurrency limit."],
     [
       "Pick the worker model from the `swarm workers` line in `~/.cursor/rules/pstack-models.mdc`. If the rule or that line is missing, use `grok-4.7-xhigh-fast`. For `auto` or `inherit-parent`, omit `model` so the workers run on the parent model. If the Task tool rejects a slug, use the default and say so. If it rejects the default, use the closest valid slug of the same family from its error message.",
       "Pick the worker model from the `swarm workers` role in `pstack_roles`. The user chose it for pstack, so passing it is an explicit model request. For `inherit-parent`, omit `model` so the workers run on the parent model. If the `subagent` tool rejects it, use the closest model of the same family from `opencode.models` and say so.",
     ],
     [
-      "Spawn all N workers in one message with `subagent_type: generalPurpose`, `environment: \"cloud\"`, `run_in_background: true`, and the step 4 model, left unset for `auto` or `inherit-parent`. Use `environment: \"local\"` only when the worker needs access to something on the user's computer.",
-      `Spawn all N workers in one message with the \`subagent\` tool, \`agent: "general"\`, \`background: true\`, and the step 4 model, left unset for \`inherit-parent\`. A worker that writes gets ${WORKTREE}, named in its brief.`,
+      "Spawn all N workers in one message with `subagent_type: generalPurpose`, `environment: \"cloud\"`, `run_in_background: true`, and the step 3 model, left unset for `auto` or `inherit-parent`. Use `environment: \"local\"` only when the worker needs access to something on the user's computer.",
+      `Spawn all N workers in one message with the \`subagent\` tool, \`agent: "general"\`, \`background: true\`, and the step 3 model, left unset for \`inherit-parent\`. A worker that writes gets ${WORKTREE}, named in its brief.`,
     ],
     ["When a worker must start from a non-default pushed branch, pass `cloud_base_branch`.", "When a worker must start from a non-default pushed branch, create its worktree at that branch."],
     ["If a worker drops out, proceed with N-1 and note it.", `If a worker drops out, proceed with N-1 and note it. ${DEPTH}`],
@@ -110,13 +106,18 @@ export const patches: Record<string, Array<[string, string]>> = {
       "- Shipping UI / IDE / CLI → the matching control skill. `cursor-team-kit` publishes `control-cli` (CLIs and TUIs) and `control-ui` (browser / Electron / web UIs).",
       `- Shipping UI / IDE / CLI → drive the real surface. Browser, Electron, and web UIs use ${CONTROL_UI}. CLIs and TUIs use ${CONTROL_CLI}. A repo's own \`verify-*\` skill wins over both.`,
     ],
-    [", and not Cursor's built-in babysit skill, whose description matches the same words.", "."],
+    [", not Cursor's built-in babysit skill, whose description matches the same words.", "."],
+    ["About to `AskQuestion` on", "About to call the `question` tool on"],
     ["Read the leaf skill in full for any principle you apply.", "Read the leaf skill in full for any principle you apply. Principle skills load as `pstack-principle-<name>`."],
     ["**Use `subagent_type: \"poteto-agent\"` for any subagent you spawn inside a playbook step**", "**Use `agent: \"poteto-agent\"` for any subagent you spawn inside a playbook step**"],
     ["set their own `subagent_type` for diverse-model review.", "set their own `agent` for diverse-model review."],
     [
-      "**Defaults for every `Task` call.** `run_in_background: true`, agent mode (readonly strips MCP), file pointers not inlined context, explicit model per role (configurable via `/setup-pstack`. Defaults `grok-4.7-xhigh-fast` for code, `claude-opus-5-5-xhigh` for prose and judgment). Code delegates tier by difficulty. The hardest changes (cross-cutting design, gnarly concurrency, subtle algorithms) go to your strongest judgment model (`claude-opus-5-5-xhigh`),",
-      "**Defaults for every `subagent` call.** `background: true`, a full-access agent (`poteto-agent` or `general`, never `explore` when the work writes or needs MCP), file pointers not inlined context, explicit model per role from `pstack_roles` (configurable via `/setup-pstack`. Defaults a grok model for code, a claude opus model for prose and judgment). The user chose these models for pstack, so passing them is an explicit model request. Code delegates tier by difficulty. The hardest changes (cross-cutting design, gnarly concurrency, subtle algorithms) go to your strongest judgment model (the `hardest tasks` role),",
+      "**Defaults for every `Task` call.** `run_in_background: true` (a steer or resume of a running agent too, because a foreground call holds your turn while other reports wait), agent mode (readonly strips MCP), file pointers not inlined context, explicit model per role (configurable via `/setup-pstack`. Defaults `grok-4.7-xhigh-fast` for code, `claude-opus-5-5-xhigh` for prose and judgment). Code delegates tier by difficulty. The hardest changes (cross-cutting design, gnarly concurrency, subtle algorithms) go to your strongest judgment model (`claude-opus-5-5-xhigh`),",
+      "**Defaults for every `subagent` call.** `background: true` (a steer or resume of a running agent too, because a foreground call holds your turn while other reports wait), a full-access agent (`poteto-agent` or `general`, never `explore` when the work writes or needs MCP), file pointers not inlined context, explicit model per role from `pstack_roles` (configurable via `/setup-pstack`. Defaults a grok model for code, a claude opus model for prose and judgment). The user chose these models for pstack, so passing them is an explicit model request. Code delegates tier by difficulty. The hardest changes (cross-cutting design, gnarly concurrency, subtle algorithms) go to your strongest judgment model (the `hardest tasks` role),",
+    ],
+    [
+      "**Match the model to the job.** Before each spawn, start from the role's line or default and pick the reasoning level and speed the job needs. The `/setup-pstack` budget sets each role's starting level, xhigh by default. Raise it one step, up to max, for the hardest or subtlest work. Lower it one step for judgment and two or more steps for routine work. Use fast mode only when the job is urgent, meaning CI or trunk is red or a person is blocked on the result right now. Otherwise use standard speed, the same slug without `-fast`. Verification is the exception and stays on the `swarm workers` model and speed (`grok-4.7-xhigh-fast` by default). Change only the effort level and whether the slug is fast, and keep the family the role names, so a diverse panel stays diverse. If the family has no slug at that level and speed, use its nearest slug. A role on `auto` or `inherit-parent` stays on the parent model. If the Task tool rejects the adjusted slug, do not try another adjusted slug. Use the role's line or default and say so. If the Task tool rejects that too, continue with the calling skill's fallback. A slug counts as rejected once a Task error says that the model is not valid, or leaves the slug out of its list of valid slugs. Never pass a rejected slug, and skip any fallback whose slug is already rejected. When the calling skill has no fallback, use the closest valid slug of the role's family from the error's list of valid slugs, or omit `model` so the subagent runs on the parent model when the list has none. When the calling skill's fallback runs out of slugs without saying what to do next, omit `model` too. Say so in both cases.",
+      "**Match the model to the job.** Before each spawn, start from the role's model in `pstack_roles` and pick the reasoning variant the job needs. A model is `providerID/modelID#variant`, and `opencode.models` lists each model's variants. The `/setup-pstack` budget sets each role's starting variant, xhigh by default. Raise it one step, up to max, for the hardest or subtlest work. Lower it one step for judgment and two or more steps for routine work. Verification is the exception and stays on the `swarm workers` model and variant. Change only the variant, and keep the model the role names, so a diverse panel stays diverse. If the model has no variant at that level, use its nearest variant. A role on `inherit-parent` stays on the parent model. If the `subagent` tool rejects the adjusted model, do not try another variant. Use the role's model as `pstack_roles` gives it and say so. If the `subagent` tool rejects that too, continue with the calling skill's fallback. Never pass a rejected model again. When the calling skill has no fallback, or its fallback runs out, use the closest model of the role's family from `opencode.models`, or omit `model` so the subagent runs on the parent model when there is none. Say so in both cases.",
     ],
     [
       "Per-role lines in the `/setup-pstack` rule override these defaults and the model choices in the routed skills (`how`, `why`, `arena`, `swarm`, `architect`, `interrogate`, `reflect`). A role with no line keeps its default, and a role line of `inherit-parent` or `auto` runs that role on the parent chat model (omit Task `model`). Each code playbook's configured model comes from its line",
@@ -134,7 +135,7 @@ export const patches: Record<string, Array<[string, string]>> = {
   "skills/poteto-mode/playbooks/authoring-a-skill.md": [["1. Use the **create-skill** skill (Cursor's built-in for authoring SKILL.md files).", `1. Use ${SKILL_FORMAT}.`]],
   "skills/poteto-mode/playbooks/visual-parity.md": [["`/loop` per component until the diff is zero.", "Loop per component with `pstack_loop` until the diff is zero."]],
   "skills/poteto-mode/playbooks/opening-a-pr.md": [
-    ["Run `/deslop` from `cursor-team-kit` over the diff before commit.", "Run `/deslop` over the diff before commit."],
+    ["Run `/deslop` from `cursor-team-kit` over the diff before commit", "Run `/deslop` over the diff before commit"],
   ],
   "skills/poteto-mode/playbooks/babysit.md": [
     [" This playbook replaces Cursor's built-in babysit skill for these requests, so do not route there even though its description matches the same words.", ""],
@@ -142,10 +143,10 @@ export const patches: Record<string, Array<[string, string]>> = {
   ],
   "skills/poteto-mode/playbooks/shipping.md": [
     [
-      "each a Cursor cloud agent, each exercising the real surface with the matching control skill (such as `control-ui` or `control-cli` from `cursor-team-kit`) against parent versus head.",
-      `each a background subagent in ${WORKTREE}, each exercising the real surface (${CONTROL_UI} or ${CONTROL_CLI}) against parent versus head.`,
+      "each a Cursor cloud agent, runs the change the way a user would with the matching control skill (such as `control-ui` or `control-cli` from `cursor-team-kit`), parent against head,",
+      `each a background subagent in ${WORKTREE}, runs the change the way a user would (${CONTROL_UI} or ${CONTROL_CLI}), parent against head,`,
     ],
-    ["Hold the watch under `/loop` in dynamic mode.", "Hold the watch under `pstack_loop` in dynamic mode (no `every`)."],
+    ["under `/loop` until it reports `COMPLETE`", "under `pstack_loop` in dynamic mode (no `every`) until it reports `COMPLETE`"],
   ],
   "skills/poteto-mode/playbooks/multi-phase-plan.md": [
     [
@@ -153,39 +154,28 @@ export const patches: Record<string, Array<[string, string]>> = {
       `Browser, Electron, and web UIs use ${CONTROL_UI}. CLIs and TUIs use ${CONTROL_CLI}.`,
     ],
     ["A surface with no control skill is a risk", "A surface with no driver is a risk"],
+    ["on a lane VM.", "in a lane's worktree."],
     ["arm the audit tick as `/loop 1h` with the tick prompt below.", "arm the audit tick as `/loop 1h`, using `pstack_loop` with `every: \"1h\"` and the tick prompt below."],
     ["Each live lane runs on its own cloud VM at the PR head. Drive through `control-ui` or `control-cli` from `cursor-team-kit`.", `Each live lane runs in ${WORKTREE} at the PR head. Drive through ${CONTROL_UI} or ${CONTROL_CLI}.`],
   ],
   "skills/poteto-mode/playbooks/autopilot-full.md": [
-    ["One Cursor cloud agent per PR owns build,", `One background subagent per PR, in ${WORKTREE}, owns build,`],
-    ["a slop-strip (the `deslop` skill from the `cursor-team-kit` plugin (`/deslop`))", `a slop-strip (${DESLOP})`],
-    ["(with the matching control skill, such as `control-cli` or `control-ui` from `cursor-team-kit`, or a named driver where none exists)", `(with ${CONTROL_UI}, ${CONTROL_CLI}, or a named driver where neither fits)`],
+    ["Each owner is a Cursor cloud agent that builds,", `Each owner is a background subagent in ${WORKTREE} that builds,`],
+    ["the slop-strip (the `deslop` skill from the `cursor-team-kit` plugin (`/deslop`))", `the slop-strip (${DESLOP})`],
     [
-      "On the operator's go, arm `/loop 1h` with a prompt that runs this tick. `/loop` works in local and cloud roots.",
-      "On the operator's go, arm `pstack_loop` with `every: \"1h\"` and a prompt that runs this tick.",
+      "Assume the VM dies. Soon after starting, push and start a decision trail in the root agent's store (path in the system prompt)",
+      `Assume the session dies. Soon after starting, push and start a decision trail in the root session's store, ${STORE},`,
     ],
-  ],
-  "skills/poteto-mode/playbooks/autopilot-stack.md": [
-    ["One Cursor cloud agent per PR owns its change end to end:", `One background subagent per PR, in ${WORKTREE}, owns its change end to end:`],
-    ["a slop-strip (the `deslop` skill from the `cursor-team-kit` plugin (`/deslop`))", `a slop-strip (${DESLOP})`],
-    [
-      "On the operator's go, the root arms `/loop 1h` with a prompt that runs this tick, per Autopilot-full step 6.",
-      "On the operator's go, the root arms `pstack_loop` with `every: \"1h\"` and a prompt that runs this tick, per Autopilot-full step 6.",
-    ],
+    ["through its control skill (such as `control-ui` or `control-cli` from `cursor-team-kit`) or a named driver", `through ${CONTROL_UI}, ${CONTROL_CLI}, or a named driver`],
+    ["On the operator's go, arm `/loop 1h` to audit", 'On the operator\'s go, arm `pstack_loop` with `every: "1h"` to audit'],
   ],
   "skills/poteto-mode/playbooks/orchestrate.md": [
+    ["Keep the program's state in the Project tracker (`notes.md`) and the Project store.", `Keep the program's state in ${STORE}, with \`notes.md\` as its tracker.`],
     [
-      "Always `environment: \"cloud\"` unless the task needs this machine: `control-ui` or `control-cli` runtime verification (from `cursor-team-kit`). Reading local transcripts under `agent-transcripts/`. Simulators and local IDE state. Auth that exists only here. Cloud agents cannot read the local store, so their briefs inline what they need or point at repo paths.",
-      `A background subagent in ${WORKTREE}. Briefs point at repo and store paths instead of inlining them.`,
+      "Run workers on a new cloud VM (`environment: \"cloud\"`) unless the work needs this machine: a `control-ui` or `control-cli` runtime check (from `cursor-team-kit`), local transcripts, a simulator, or auth that exists only here.",
+      `Run each worker as a background subagent in ${WORKTREE}.`,
     ],
-    ["Local spawns may reference the standing-orders file by store path. Verbatim paste is for cloud spawns and every resume.", "Spawns may reference the standing-orders file by store path. Verbatim paste is for every resume."],
-    ["its spawn budget with the cloud default and the local exception list,", "its spawn budget,"],
-    ["Restacks run in cloud. A local restack at this scale takes the laptop down.", "Restacks run one at a time in the stacker's own worktree."],
-    ["pushed branches, the cloud agent's status in the Cursor dashboard. Transcript mtime is not liveness.", "pushed branches, the subagent session's status from `pstack.sessions({ children: true })`. Session `updated` time is not liveness."],
-    [
-      "After a Cursor restart: local agents are dead, cloud work is not. Re-read the standing orders and `units.tsv`, recompute the frontier, reattach cloud work by PR and branch rather than agent id,",
-      "After an OpenCode restart: running subagents may have stopped. Re-read the standing orders and `units.tsv`, recompute the frontier, reattach work by PR and branch rather than session id,",
-    ],
+    ["Stop at three levels: you, sub-coordinators, and workers.", `Stop at three levels: you, sub-coordinators, and workers. ${DEPTH}`],
+    ["a control-skill check,", "a check on the real surface,"],
   ],
   "skills/poteto-mode/playbooks/session-pickup.md": [
     [
@@ -213,8 +203,8 @@ export const patches: Record<string, Array<[string, string]>> = {
       "",
     ],
     [
-      '\t# Most recent chat whose transcript operated in this worktree. Match path\n\t# followed by "/" or a quote so glint-482 does not match glint-482-r37.\n\tlast="-"; last_ts=0\n\tif [ -d "$transcripts" ]; then\n\t\tf=$(rg -l -e "${wt}/" -e "${wt}\\"" "$transcripts" 2>/dev/null \\\n\t\t\t| xargs stat -f \'%m %N\' 2>/dev/null | sort -rn | head -1)\n\t\tif [ -n "$f" ]; then last_ts=$(echo "$f" | awk \'{print $1}\')\n\t\t\tlast=$(date -r "$last_ts" \'+%Y-%m-%d\' 2>/dev/null); fi\n\tfi\n',
-      '\t# Newest OpenCode session that ran in this worktree.\n\tlast="-"; last_ts=0\n\tupdated=$(opencode api GET "/api/session?directory=${wt}&limit=1&order=desc" 2>/dev/null | jq -r \'.data[0].time.updated // empty\')\n\tif [ -n "$updated" ]; then last_ts=$(( updated / 1000 ))\n\t\tlast=$(date -r "$last_ts" \'+%Y-%m-%d\' 2>/dev/null); fi\n',
+      '\t# Most recent chat whose transcript operated in this worktree. Match path\n\t# followed by "/" or a quote so glint-482 does not match glint-482-r37.\n\tlast="-"; last_ts=0\n\tif [ -d "$transcripts" ]; then\n\t\tf=$(rg -l -e "${wt}/" -e "${wt}\\"" "$transcripts" 2>/dev/null \\\n\t\t\t| xargs stat "${stat_fmt[@]}" 2>/dev/null | sort -rn | head -1)\n\t\tif [ -n "$f" ]; then last_ts=$(echo "$f" | awk \'{print $1}\')\n\t\t\tlast=$(fmt_day "$last_ts" 2>/dev/null); fi\n\tfi\n',
+      '\t# Newest OpenCode session that ran in this worktree.\n\tlast="-"; last_ts=0\n\tupdated=$(opencode api GET "/api/session?directory=${wt}&limit=1&order=desc" 2>/dev/null | jq -r \'.data[0].time.updated // empty\')\n\tif [ -n "$updated" ]; then last_ts=$(( updated / 1000 ))\n\t\tlast=$(fmt_day "$last_ts" 2>/dev/null); fi\n',
     ],
   ],
   "skills/recall/SKILL.md": [
@@ -244,15 +234,12 @@ export const patches: Record<string, Array<[string, string]>> = {
     ["A `create-skill`-style test/iterate benchmark loop isn't useful here.", "A `skill-creator`-style test/iterate benchmark loop isn't useful here."],
     ["`create-skill` alone, no mining required.", "`skill-creator` alone, no mining required."],
   ],
-  "skills/reflect/references/judgment-reviewer.md": [
-    ["(workspace `.cursor/skills/`, user-level `~/.cursor/skills/`, or plugin-installed paths under `~/.cursor/plugins/`)", "or `skill` tool loads (pstack skills load as `pstack-<name>`; project skills live in `.opencode/skills/`, user skills in `~/.config/opencode/skills/`)"],
-  ],
-  "skills/reflect/references/tooling-reviewer.md": [
-    ["(workspace `.cursor/skills/`, user-level `~/.cursor/skills/`, or plugin-installed paths under `~/.cursor/plugins/`)", "or `skill` tool loads (pstack skills load as `pstack-<name>`; project skills live in `.opencode/skills/`, user skills in `~/.config/opencode/skills/`)"],
-  ],
-  "skills/reflect/references/divergent-reviewer.md": [
-    ["(workspace `.cursor/skills/`, user-level `~/.cursor/skills/`, or plugin-installed paths under `~/.cursor/plugins/`)", "or `skill` tool loads (pstack skills load as `pstack-<name>`; project skills live in `.opencode/skills/`, user skills in `~/.config/opencode/skills/`)"],
-  ],
+  ...Object.fromEntries(
+    ["judgment", "tooling", "divergent"].map((lens) => [
+      `skills/reflect/references/${lens}-reviewer.md`,
+      [[SKILL_USED, "a `skill` tool load of it (pstack skills load as `pstack-<name>`), a read of its `SKILL.md` (under `.opencode/skills/` or `~/.config/opencode/skills/`)"]],
+    ]),
+  ),
   "skills/show-me-your-work/SKILL.md": [
     [
       "Read this run's transcript under the active workspace's `agent-transcripts/` directory (the system prompt names the path). Don't glob across `~/.cursor/projects/*/`. That reads unrelated private chats.",
@@ -264,7 +251,17 @@ export const patches: Record<string, Array<[string, string]>> = {
     ["Write `.cursor/skills/verify-<app>/SKILL.md`", "Write `.opencode/skills/verify-<app>/SKILL.md`"],
     ["Create `.cursor/skills/verify-<app>/features/README.md`", "Create `.opencode/skills/verify-<app>/features/README.md`"],
   ],
-  // Upstream cursor/plugins#379 by poteto, not yet merged: unslop is meant to apply without being asked.
-  "skills/unslop/SKILL.md": [["description: Cut AI tells from any writing. Must always apply.\ndisable-model-invocation: true\n", "description: Cut AI tells from any writing. Must always apply.\n"]],
+  // Upstream keeps unslop user-invoked (cursor/plugins#379 closed unmerged). Here agents may invoke it without being asked.
+  "skills/unslop/SKILL.md": [["description: Cut AI tells from any writing.\ndisable-model-invocation: true\n", "description: Cut AI tells from any writing.\n"]],
+  "skills/ketchup/SKILL.md": [
+    ["a chart or diagram from `/visualize`,", "a chart rendered to an image,"],
+    ["a Mermaid diagram for how things connect and a `/visualize` chart for numbers.", "a Mermaid diagram for how things connect and a chart rendered to an image for numbers."],
+  ],
+  "agents/poteto-agent.md": [
+    [
+      "Use the absolute path your parent gave you. With no path, before any other work, search `~/.cursor/plugins/` for a file whose path ends in `skills/poteto-mode/SKILL.md`. If more than one file matches, use the copy whose `.cursor-plugin/plugin.json` has the highest `version`. Your skill catalog hides this skill, so a missing catalog entry does not mean pstack is absent. If no such file exists, stop and tell your parent.",
+      "Load it with the `skill` tool before any other work. If it does not load, stop and tell your parent.",
+    ],
+  ],
   "skills/maintain-verification-skill/SKILL.md": [["(usually `.cursor/skills/verify-*/`)", "(usually `.opencode/skills/verify-*/`)"]],
 }

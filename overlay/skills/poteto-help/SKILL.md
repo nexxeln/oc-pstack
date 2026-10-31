@@ -26,6 +26,7 @@ Check the state that changes the answer, and mention it only when it does:
 
 - Call `pstack_roles` with no arguments. `budget: large (default)` means no budget is stored. Returned roles include defaults and any stored or plugin-option overrides. Use those values rather than assuming setup has run.
 - No `verify-*` skill or other app harness in the project means agents have no scripted way to drive the app. Mention `/create-verification-skill` when the question is about proving a change works.
+- No formal verification skill in the project means no property is checked past what tests reach. Mention `/create-formal-verification-skill` when the question is about a race, an invariant, or another case tests rarely hit. When one exists and the code it covers changed after the commit it records as last in sync, mention `/maintain-formal-verification-skill` if the question touches that code.
 
 When no budget is stored and it matters, ask whether the user wants to pick models and a reasoning budget now. It matters when the user is new, asks about setup or cost, or needs to know which models run. Ask at most once per chat. If the need is also unclear, ask both questions together. Offer two choices:
 
@@ -35,7 +36,7 @@ When no budget is stored and it matters, ask whether the user wants to pick mode
 ## Get set up
 
 1. Add `"github:nexxeln/oc-pstack"` to `plugins` in OpenCode's configuration, as shown in the README. The plugin requires OpenCode V2.
-2. Run [`/setup-pstack`](../setup-pstack/SKILL.md). It asks for a reasoning budget and stores a model for each role with `pstack_roles`. Changes apply to the next subagent spawn.
+2. Run [`/setup-pstack`](../setup-pstack/SKILL.md). It asks for a reasoning budget and stores a model for each role with `pstack_roles`. Changes apply to the next subagent spawn. Then it offers once each to generate a verification skill and a formal verification skill for the project, unless the project already has one.
 3. Start a real task with `/poteto-mode`, a goal, and a check that can pass or fail.
 
 `/poteto-help` is typed-only. `/setup-pstack`, `/deslop`, and `/unslop` can load automatically from their descriptions. Invoke the other skills directly or through a playbook. Offer to word their first prompt with them after reading [`references/prompting.md`](references/prompting.md).
@@ -59,10 +60,14 @@ The default answer is `/poteto-mode`. Name a skill directly when the user wants 
 | The user wants to | Skill |
 |---|---|
 | Do a non-trivial task with rigor | `/poteto-mode` |
+| Check that the agent understood their goal and the problem before it starts | `/in-your-own-words` |
+| Get a prompt rewritten deeper, not bigger, before sending it. It returns the prompt and doesn't do the task | `/sharpen` |
 | Know how code works or where new code belongs | `/how` |
 | Know why code is shaped this way or where a number came from | `/why` |
 | Understand a change or subsystem in plain language | `/teach` |
 | Catch up on recent work on a topic | `/recall` |
+| Catch up on this session since their last message, with every waiting call listed | `/ketchup` |
+| Catch up like `/ketchup`, in a short subtitled video of slides | `/ketchup-video` |
 | Know what a small diff could break outside itself | `/blast-radius` |
 | Settle types and module shape before implementation | `/architect` |
 | Compare attempts at one brief and combine the best parts | `/arena` |
@@ -77,6 +82,9 @@ The default answer is `/poteto-mode`. Name a skill directly when the user wants 
 | Hear the last reply again in plain words | `/bro` |
 | Give agents a script to drive the app and prove behavior | `/create-verification-skill` |
 | Update a verification skill and its feature map | `/maintain-verification-skill` |
+| Formally verify a race, invariant, or other property that tests rarely reach | `/create-formal-verification-skill` |
+| Bring a formal verification back in line after its code changed, and tell drift from a bug | `/maintain-formal-verification-skill` |
+| Show what the user sees as a chart checked by a TLA+ model, with the shortest path to each state that breaks a rule | `/statechart` |
 | Vet a performance number | `/benchmark-checklist` |
 | Plan and run a large or cross-cutting change | `/figure-it-out` |
 | Keep a decision log and review it afterward | `/show-me-your-work` |
@@ -94,7 +102,7 @@ Close calls:
 - `/arena` gives every worker the same brief. `/swarm` splits work into slices or a race.
 - `/architect` implements after settling the design. Add "with checkpoint" to review it before code.
 - `/interrogate` reviews the diff. `/blast-radius` checks outside the diff.
-- `/recall` covers recent sessions. The Session pickup playbook resumes one specific session or branch.
+- `/recall` covers recent sessions. `/ketchup` covers only this session since the user's last message. The Session pickup playbook resumes one specific session or branch.
 - `/figure-it-out` designs one rigorous run. Orchestrate spans days and many PRs. Autonomous run drives one task to a finish condition.
 
 `/loop` is provided by this plugin. Agents arm it with `pstack_loop`. Use `skill-creator` when installed to author skills, otherwise follow OpenCode's SKILL.md format. Drive browsers with available browser tools and CLIs through the shell. There is no `/orchestrate` skill. Orchestrate is a playbook.
@@ -107,7 +115,7 @@ Playbooks are step lists inside `/poteto-mode`, with no separate slash command. 
 - "land the stack" selects Shipping.
 - "take over this branch" selects Session pickup.
 - "pause safely" selects Pause safely.
-- "full autopilot on this queue" selects Autopilot-full. "stack them, don't ship" selects Autopilot-stack.
+- "full autopilot on this queue" selects Autopilot-full. "autopilot, don't merge" selects Autopilot-stack.
 - "run the eval playbook" selects Eval.
 
 The Playbooks section of `pstack-poteto-mode` lists every playbook. Asking it for a plan across phases or stacked PRs selects Multi-phase plan, which writes the plan without implementing it. Prototype or `/architect` settles design questions in code first.

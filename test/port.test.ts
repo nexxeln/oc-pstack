@@ -10,7 +10,7 @@ test("ported skills keep upstream's voice and drop Cursor mechanisms", async () 
   expect(swarm).toContain('the `subagent` tool, `agent: "general"`, `background: true`')
   expect(swarm).not.toContain("cloud")
   const how = await read("skills/how/SKILL.md")
-  expect(how).toContain("- `agent`: `explore` (read-only)\n- `model`: the `how explorer` role from `pstack_roles`")
+  expect(how).toContain('Every spawn is a `subagent` call with `agent: "explore"` (read-only). Explorers use the `how explorer` role')
   expect(await read("skills/poteto-mode/SKILL.md")).toContain('**Use `agent: "poteto-agent"` for any subagent you spawn inside a playbook step**')
 })
 
